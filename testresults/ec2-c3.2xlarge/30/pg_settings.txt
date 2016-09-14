@@ -1,0 +1,53 @@
+Test results:
+   script   | clients | tps  | avg_latency | max_latency 
+------------+---------+------+-------------+-------------
+ select.sql |       1 | 3063 |           0 |         216
+
+Server epg003wo, client epg003wo
+
+Server settings in postgresql.conf:
+             name              | current_setting 
+-------------------------------+-----------------
+ autovacuum                    | on
+ autovacuum_freeze_max_age     | 500000000
+ autovacuum_max_workers        | 3
+ autovacuum_naptime            | 2min
+ checkpoint_segments           | 128
+ checkpoint_timeout            | 1h
+ commit_delay                  | 1000
+ default_statistics_target     | 1000
+ default_transaction_isolation | read committed
+ effective_cache_size          | 6769MB
+ effective_io_concurrency      | 1
+ hot_standby_feedback          | on
+ log_autovacuum_min_duration   | 0
+ log_destination               | stderr
+ log_filename                  | postgresql.log
+ log_line_prefix               | %t [%p]: 
+ log_min_messages              | warning
+ logging_collector             | on
+ maintenance_work_mem          | 1GB
+ max_connections               | 2048
+ max_standby_streaming_delay   | 3min
+ max_wal_senders               | 3
+ shared_buffers                | 5265MB
+ synchronous_commit            | off
+ synchronous_standby_names     | 10.16.3.148
+ temp_buffers                  | 512MB
+ vacuum_freeze_min_age         | 1000000
+ vacuum_freeze_table_age       | 500000
+ wal_buffers                   | 512MB
+ wal_keep_segments             | 500
+ wal_level                     | hot_standby
+ work_mem                      | 512MB
+
+
+benchmark client OS Configuration (may not be the same as the server)
+Linux epg003wo 4.4.15-25.57.amzn1.x86_64 #1 SMP Wed Jul 27 22:37:49 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux
+/proc/sys/vm/dirty_background_bytes=0
+/proc/sys/vm/dirty_background_ratio=10
+/proc/sys/vm/dirty_bytes=0
+/proc/sys/vm/dirty_expire_centisecs=3000
+/proc/sys/vm/dirty_ratio=20
+/proc/sys/vm/dirty_writeback_centisecs=500
+

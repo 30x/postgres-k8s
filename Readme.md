@@ -60,3 +60,35 @@ max_wal_senders = 3
 
 EOF
 ```
+
+
+Restore backup to Slave
+
+```MASTER={INSERT HOSTNAME/IP}
+
+su -c "/usr/pgsql-9.4/bin/pg_ctl -D /ebs/pgdata stop -m fast" postgres
+rm -rf /ebs/pgdata/*
+chown -R postgres: /ebs/pgdata
+
+su -c "/usr/pgsql-9.4/bin/pg_basebackup -D /ebs/pgdata -p 5432 -U postgres -v -h $MASTER --xlog-method=stream" postgres
+
+su -c "/usr/pgsql-9.4/bin/pg_ctl -D /ebs/pgdata start" postgres
+
+#test
+psql -U postgres -d apigee -c "SELECT now() - pg_last_xact_replay_timestamp() AS time_lag";
+```
+
+Edit slave's pg_hba.conf to allow replica, then repeat steps above on replica
+
+
+Lastly edit postgresql.conf and add the following parameters to enable synchronous replication
+
+```
+synchronous_standby_names = '{slave ip}'
+```
+
+Notes in testing
+
+Test client
+
+m4.4xlarge
