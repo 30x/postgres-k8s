@@ -4,7 +4,7 @@ metadata:
   name: edgexpostgres
 spec:
   serviceName: "edgexpostgres"
-  replicas: 3
+  replicas: 2
   template:
     metadata:
       labels:
@@ -15,16 +15,17 @@ spec:
       terminationGracePeriodSeconds: 0
       containers:
       - name: postgres
-        image: postgres
+        image: thirtyx/postgres:0.0.1-dev
         env:
-          - name: DB_PASS
+          - name: POSTGRES_PASSWORD
             value: password
           - name: PGDATA
-            value: /var/lib/postgresql/data/pgdata
+            value: /var/lib/postgresql/data
         ports:
           - containerPort: 5432
+        imagePullPolicy: Always
         volumeMounts:
-          - mountPath: /var/lib/postgresql/data
+          - mountPath: /var/lib/postgresql
             name: pg-data
   volumeClaimTemplates:
   - metadata:

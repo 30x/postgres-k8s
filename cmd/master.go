@@ -122,11 +122,13 @@ func ConfigureMaster(cmd *cobra.Command, args []string) error {
 	fmt.Println("Configuring hba conf file")
 
 	//TODO, this needs to have a username and password
-	hbaTemplate := `
-host     replication     postgres       %s          trust
+	hbaTemplate := `\n\n
+host	replication	postgres	%s	trust
 	`
 
 	outputLine := fmt.Sprintf(hbaTemplate, slaveHostname)
+
+	fmt.Printf("Adding the line %s to the file %s", outputLine, pgaHbaFile.Name())
 
 	pgaHbaFile.WriteString(outputLine)
 
@@ -149,7 +151,7 @@ host     replication     postgres       %s          trust
 	postgresTemplate := `
 wal_level = hot_standby
 archive_mode = on
-archive_command = 'test ! -f %s/archive/%%f && cp %p %s/archive/%%f'
+archive_command = 'test ! -f %s/archive/%%f && cp %%p %s/archive/%%f'
 max_wal_senders = 3
 synchronous_standby_names = '%s'
 	`
