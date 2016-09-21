@@ -51,7 +51,7 @@ Lastly configure the WAL files
 
 
 ```
-cat <<EOF >> /var/lib/postgresql/data/pgdata/pg_hba.conf
+cat <<EOF >> /var/lib/postgresql/data/pgdata/postgres.conf
 
 wal_level = hot_standby
 archive_mode = on
@@ -92,3 +92,15 @@ Notes in testing
 Test client
 
 m4.4xlarge
+
+Create a test user
+
+```
+createuser bench -U postgres -P
+```
+
+Now initialize the PG tests
+
+```
+
+```
