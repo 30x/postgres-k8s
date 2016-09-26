@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -122,9 +123,11 @@ func ConfigureMaster(cmd *cobra.Command, args []string) error {
 	fmt.Println("Configuring hba conf file")
 
 	//TODO, this needs to have a username and password
-	hbaTemplate := `\n\n
+	hbaTemplate := `
+
+	
 host	replication	postgres	%s	trust
-	`
+`
 
 	outputLine := fmt.Sprintf(hbaTemplate, slaveHostname)
 
@@ -148,15 +151,16 @@ host	replication	postgres	%s	trust
 
 	fmt.Println("Configuring postgres conf file")
 
+	postgresDataPath := filepath.Join(postgresDataDir, "archive")
 	postgresTemplate := `
 wal_level = hot_standby
 archive_mode = on
-archive_command = 'test ! -f %s/archive/%%f && cp %%p %s/archive/%%f'
+archive_command = 'test ! -f %s/%%f && cp %%p %s/%%f'
 max_wal_senders = 3
 synchronous_standby_names = '%s'
 	`
 
-	outputLine = fmt.Sprintf(postgresTemplate, postgresDataDir, postgresDataDir, slaveHostname)
+	outputLine = fmt.Sprintf(postgresTemplate, postgresDataPath, postgresDataPath, slaveHostname)
 
 	postgresConf.WriteString(outputLine)
 
