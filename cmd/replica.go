@@ -73,4 +73,5 @@ func init() {
 
 	replicaCmd.PersistentFlags().StringVarP(&postgresUser, "user", "", "", "The postgres user to restore the backup")
 
+	replicaCmd.PersistentFlags().StringVarP(&postgresConfLocation, "pg_conf", "", "", "The path to the postgres.conf file")
 }

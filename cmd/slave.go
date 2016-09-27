@@ -74,4 +74,6 @@ func init() {
 
 	slaveCmd.PersistentFlags().StringVarP(&postgresUser, "user", "", "", "The postgres user to restore the backup")
 
+	slaveCmd.PersistentFlags().StringVarP(&postgresConfLocation, "pg_conf", "", "", "The path to the postgres.conf file")
+
 }

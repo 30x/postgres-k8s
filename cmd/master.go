@@ -18,12 +18,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
-
-
 
 // masterCmd represents the master command
 var masterCmd = &cobra.Command{
@@ -70,7 +67,7 @@ func init() {
 
 }
 
-//Configure configure this node as a master
+//ConfigureMaster configure this node as a master
 func ConfigureMaster(cmd *cobra.Command, args []string) error {
 
 	inputErrors := &InputErrors{}
@@ -80,7 +77,7 @@ func ConfigureMaster(cmd *cobra.Command, args []string) error {
 		inputErrors.Append(errors.New("You must specify a pg_hba.conf file"))
 	}
 
-	if pghbaConfLocation == "" {
+	if postgresConfLocation == "" {
 		inputErrors.Append(errors.New("You must specify a postgres.conf file"))
 	}
 
@@ -107,12 +104,14 @@ func ConfigureMaster(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	//TODO, this causes a race condition, since the second pod is not yet up and running.  This needs to be better
+	// slaveHostname, err := GetPetPodNameAtIndex(hostname, 1)
 
-	slaveHostname, err := GetPetPodNameAtIndex(hostname, 1)
+	// if err != nil {
+	// 	return err
+	// }
 
-	if err != nil {
-		return err
-	}
+	slaveHostname := "10.244.0.0/16"
 
 	fmt.Println("Configuring hba conf file")
 
@@ -143,9 +142,18 @@ host	replication	postgres	%s	trust
 
 	//now update the postgres file
 
+	fmt.Println("Creating archive directory")
+
+	postgresArchiveDir := GetPostgresArchivepath(postgresDataDir)
+
+	err = os.MkdirAll(postgresArchiveDir, 0700)
+
+	if err != nil {
+		return err
+	}
+
 	fmt.Println("Configuring postgres conf file")
 
-	postgresDataPath := filepath.Join(postgresDataDir, "archive")
 	postgresTemplate := `
 wal_level = hot_standby
 archive_mode = on
@@ -154,7 +162,7 @@ max_wal_senders = 3
 synchronous_standby_names = '%s'
 	`
 
-	outputLine = fmt.Sprintf(postgresTemplate, postgresDataPath, postgresDataPath, slaveHostname)
+	outputLine = fmt.Sprintf(postgresTemplate, postgresArchiveDir, postgresArchiveDir, slaveHostname)
 
 	postgresConf.WriteString(outputLine)
 
@@ -169,6 +177,5 @@ synchronous_standby_names = '%s'
 	if err != nil {
 		return err
 	}
-
 	return nil
 }

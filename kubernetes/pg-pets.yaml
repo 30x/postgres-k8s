@@ -1,14 +1,30 @@
+# A headless service to create DNS records
+apiVersion: v1
+kind: Service
+metadata:
+  name: edgexpostgres
+  labels:
+    app: postgres
+spec:
+  ports:
+  - port: 5432
+    name: edgexpostgres
+  # *.edgexpostgres.default.svc.cluster.local
+  clusterIP: None
+  selector:
+    app: postgres
+---
 apiVersion: apps/v1alpha1
 kind: PetSet
 metadata:
   name: edgexpostgres
 spec:
-  serviceName: "edgexpostgres"
+  serviceName: edgexpostgres
   replicas: 2
   template:
     metadata:
       labels:
-        app: edgexpostgres
+        app: postgres
       annotations:
         pod.alpha.kubernetes.io/initialized: "true"
     spec:

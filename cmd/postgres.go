@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -35,6 +36,10 @@ func ConfigureFromBackup(cmd *cobra.Command, args []string, walLocator *WALLocat
 
 	if hostname == "" {
 		inputErrors.Append(errors.New("You must specify a hostname"))
+	}
+
+	if postgresConfLocation == "" {
+		inputErrors.Append(errors.New("You must specify a postgres.conf file"))
 	}
 
 	if inputErrors.HasErrors() {
@@ -73,9 +78,35 @@ func ConfigureFromBackup(cmd *cobra.Command, args []string, walLocator *WALLocat
 		return err
 	}
 
-	//now that the pre-backup has executed, the container will start the postgres process
+	postgresConf, err := os.OpenFile(postgresConfLocation, os.O_RDWR|os.O_APPEND, 0660)
 
+	if err != nil {
+		return err
+	}
+
+	postgresTemplate := `
+hot_standby = on
+	`
+
+	postgresConf.WriteString(postgresTemplate)
+
+	err = postgresConf.Sync()
+
+	if err != nil {
+		return err
+	}
+
+	err = postgresConf.Close()
+
+	if err != nil {
+		return err
+	}
+
+	//make sure postgres owns the data directory
+
+	//now that the pre-backup has executed, the container will start the postgres process
 	return nil
+
 }
 
 //Reload reload postgres
@@ -88,4 +119,9 @@ func Reload(cmd *cobra.Command, args []string) error {
 	// fmt.Printf("ares are %+v\n", args)
 
 	return nil
+}
+
+//GetPostgresArchivepath get the path to the postgres archive
+func GetPostgresArchivepath(postgresDataDir string) string {
+	return filepath.Join(postgresDataDir, "archive")
 }
