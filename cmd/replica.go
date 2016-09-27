@@ -21,9 +21,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// slaveCmd represents the master command
-var slaveCmd = &cobra.Command{
-	Use:   "slave [configure|reload]",
+// replicaCmd represents the master command
+var replicaCmd = &cobra.Command{
+	Use:   "replica [configure|reload]",
 	Short: "Configure the slave node",
 	Long:  `Configure the slave node`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -37,10 +37,9 @@ var slaveCmd = &cobra.Command{
 		var err error
 
 		if command == "configure" {
-
 			walLocator := &WALLocator{
 				GetHostName: func() (string, error) {
-					return GetPetPodNameAtIndex(hostname, 0)
+					return GetPetPodNameAtIndex(hostname, 1)
 				},
 			}
 
@@ -63,15 +62,15 @@ var slaveCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.AddCommand(slaveCmd)
+	RootCmd.AddCommand(replicaCmd)
 
 	//add our two flags
-	slaveCmd.PersistentFlags().StringVarP(&postgresDataDir, "data", "", "", "The path to the postgres data directory")
+	replicaCmd.PersistentFlags().StringVarP(&postgresDataDir, "data", "", "", "The path to the postgres data directory")
 
-	slaveCmd.PersistentFlags().StringVarP(&hostname, "hostname", "", "", "The hostname of the current machine")
+	replicaCmd.PersistentFlags().StringVarP(&hostname, "hostname", "", "", "The hostname of the current machine")
 
-	slaveCmd.PersistentFlags().StringVarP(&postgresPort, "port", "", "", "The postgres port to run a backup")
+	replicaCmd.PersistentFlags().StringVarP(&postgresPort, "port", "", "", "The postgres port to run a backup")
 
-	slaveCmd.PersistentFlags().StringVarP(&postgresUser, "user", "", "", "The postgres user to restore the backup")
+	replicaCmd.PersistentFlags().StringVarP(&postgresUser, "user", "", "", "The postgres user to restore the backup")
 
 }

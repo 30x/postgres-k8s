@@ -23,10 +23,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var pghbaConfLocation string
-var postgresConfLocation string
-var postgresDataDir string
-var hostname string
+
 
 // masterCmd represents the master command
 var masterCmd = &cobra.Command{
@@ -52,10 +49,7 @@ var masterCmd = &cobra.Command{
 		}
 
 		if err != nil {
-			// cmd.std
-			// cmd.OutOrStderr().Write([]byte(err.Error()))
-
-			fmt.Printf("Error: %s", err)
+			fmt.Printf("Error: %s\n\n\n", err)
 
 			cmd.Help()
 		}
@@ -175,18 +169,6 @@ synchronous_standby_names = '%s'
 	if err != nil {
 		return err
 	}
-
-	return nil
-}
-
-//Reload reload postgres
-func Reload(cmd *cobra.Command, args []string) error {
-
-	// fmt.Println("master called")
-
-	// fmt.Printf("command is %+v\n", cmd)
-
-	// fmt.Printf("ares are %+v\n", args)
 
 	return nil
 }
