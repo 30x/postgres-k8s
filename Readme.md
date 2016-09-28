@@ -104,3 +104,15 @@ Now initialize the PG tests
 ```
 
 ```
+
+Running a postgres container with the directory mounted for testing
+
+```
+docker run -v "/Users/apigee/develop/go/src/github.com/30x/postgres-k8s:/testdir" postgres:9.5.4
+```
+Get the docker process id, then connect via bash
+
+```
+docker ps
+docker exec -ti {docker id} /bin/bash
+```

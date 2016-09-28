@@ -8,24 +8,26 @@ function get_host_at_index(){
   #Get all indexes, so we can iterate them and know the index
   indexes=${!hostcomponents[*]}
 
-  echo "Indexes is ${indexes}"
-  
+  # echo "Indexes is ${indexes}"
+
   output=""
   indexOut=$1
 
   for index in $indexes;
   do
-    part=${indexes[$index]}
+    part=${hostcomponents[$index]}
 
-    echo ${part}
+    # echo "part is ${part}"
 
     #First index, extract the hostname
     if [ $index -eq 0 ]; then
       output=${part%-*}
       output="${output}-${indexOut}"
+    else
+      output="${output}.$part"
     fi
 
-    output="${output}.part"
+
 
   done
 
@@ -38,25 +40,30 @@ function get_host_at_index(){
 function configure_master() {
   echo "Configuring master"
 
+  echo "Configuring the archive directory"
+
   ARCHIVE_DIR="/var/lib/postgresql"
   mkdir -p /var/lib/postgresql/data/archive
   chown -R postgres $ARCHIVE_DIR
 
 
+
   allowed_replicas="10.244.0.0/16"
   slave_name=$(get_host_at_index 1)
 
+  echo "Configuring /var/lib/postgresql/data/pg_hba.conf for master"
   cat << EOF >> /var/lib/postgresql/data/pg_hba.conf
-  host	replication	postgres	${allowed_replicas}	trust
+host	replication	postgres	${allowed_replicas}	trust
 EOF
 
 
+  echo "Configuring /var/lib/postgresql/data/postgresql.conf for master"
   cat << EOF >> /var/lib/postgresql/data/postgresql.conf
-  wal_level = hot_standby
-  archive_mode = on
-  archive_command = 'test ! -f /var/lib/postgresql/data/archive/%f && cp %p /var/lib/postgresql/data/archive/%f'
-  max_wal_senders = 3
-  synchronous_standby_names = '${slave_name}'
+wal_level = hot_standby
+archive_mode = on
+archive_command = 'test ! -f /var/lib/postgresql/data/archive/%f && cp %p /var/lib/postgresql/data/archive/%f'
+max_wal_senders = 3
+synchronous_standby_names = '${slave_name}'
 EOF
 
 
