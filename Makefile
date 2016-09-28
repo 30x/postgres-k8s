@@ -1,13 +1,8 @@
 IMAGE_VERSION=0.0.1-dev
 
-build: compile build-image
-
 build-and-push: build push-to-hub
 
-compile:
-	CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-w' -o build/posgres-agent .
-
-build-image:
+build:
 	docker build -t thirtyx/postgres .
 
 build-dev: compile build-image push-to-dev

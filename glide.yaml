@@ -1,4 +1,0 @@
-package: github.com/30x/postgres-k8s
-import:
-- package: github.com/spf13/cobra
-- package: github.com/spf13/viper
