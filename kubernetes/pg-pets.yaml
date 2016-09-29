@@ -43,6 +43,8 @@ spec:
         volumeMounts:
           - mountPath: /var/lib/postgresql
             name: pg-data
+          - mountPath: /var/lib/otherdata
+            name: other-data
   volumeClaimTemplates:
   - metadata:
       name: pg-data
@@ -53,3 +55,12 @@ spec:
       resources:
         requests:
           storage: 100Gi
+  - metadata:
+      name: other-data
+      annotations:
+        volume.alpha.kubernetes.io/storage-class: anything
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi

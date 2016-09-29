@@ -42,36 +42,42 @@ function configure_master() {
 
   echo "Configuring the archive directory"
 
-  ARCHIVE_DIR="/var/lib/postgresql"
-  mkdir -p /var/lib/postgresql/data/archive
-  chown -R postgres $ARCHIVE_DIR
+  mkdir -p $PGDATA/archive
+  chown -R postgres $PGDATA
 
 
 
   allowed_replicas="10.244.0.0/16"
   slave_node=$(get_host_at_index 1)
 
-  echo "Configuring /var/lib/postgresql/data/pg_hba.conf for master"
-  cat << EOF >> /var/lib/postgresql/data/pg_hba.conf
+  echo "Configuring $PGDATA/pg_hba.conf for master"
+  cat << EOF >> $PGDATA/pg_hba.conf
 host	replication	postgres	${allowed_replicas}	trust
 EOF
 
 
-  echo "Configuring /var/lib/postgresql/data/postgresql.conf for master"
-  cat << EOF >> /var/lib/postgresql/data/postgresql.conf
+  echo "Configuring $PGDATA/postgresql.conf for master"
+  cat << EOF >> $PGDATA/postgresql.conf
+#-------------------------
+# START K8S AUTO CONFIGURE
+#-------------------------
 wal_level = hot_standby
 archive_mode = on
-archive_command = 'test ! -f /var/lib/postgresql/data/archive/%f && cp %p /var/lib/postgresql/data/archive/%f'
+archive_command = 'test ! -f $PGDATA/archive/%f && cp %p $PGDATA/archive/%f'
 max_wal_senders = 3
 max_replication_slots = 3
 #synchronous_standby_names = '${slave_node}'
+synchronous_standby_names = '10.244.0.7'
+#-------------------------
+# END K8S AUTO CONFIGURE
+#-------------------------
 EOF
 
 
 #   #Rendered from pod environment
 # host	replication	postgres	%s	trust
 # `
-  # cat ${pg_conf} >> /var/lib/postgresql/data/pg_hba.conf
+  # cat ${pg_conf} >> $PGDATA/pg_hba.conf
 }
 
 
@@ -86,12 +92,12 @@ function configure_slave() {
 
 
   #stop postgres before configuring
-  su -c "/usr/lib/postgresql/9.5/bin/pg_ctl stop -D /var/lib/postgresql/data/" postgres
+  gosu postgres pg_ctl stop -D $PGDATA/
 
   #Data is a mount point, so remove everything under it
-  rm -rf /var/lib/postgresql/data/*
+  rm -rf $PGDATA/*
   #Make sure ownership is correct
-  chown -R postgres /var/lib/postgresql/data
+  chown -R postgres $PGDATA
 
   #configure the system
 
@@ -99,7 +105,7 @@ function configure_slave() {
 
   echo "Beginning bootstrap from host ${master_node}"
 
-  su -c "/usr/lib/postgresql/9.5/bin/pg_basebackup -D /var/lib/postgresql/data -p 5432 -U postgres -v -h ${master_node} --xlog-method=stream" postgres
+  gosu postgres pg_basebackup -D $PGDATA -p 5432 -U postgres -v -h ${master_node} --xlog-method=stream
 
   if [ $? -ne 0 ]; then
     echo "FAILURE: Unable to restore from backup, existing"
@@ -108,15 +114,20 @@ function configure_slave() {
 
 
 
-  echo "Configuring /var/lib/postgresql/data/postgresql.conf for slave"
-  cat << EOF >> /var/lib/postgresql/data/postgresql.conf
+  echo "Configuring $PGDATA/postgresql.conf for slave"
+
+
+  #DELETE the configuration from the master if we're doing sync replication
+  sed -i -- '/.*START K8S/,/.*END K8S/d'  $PGDATA/postgresql.conf
+
+  cat << EOF >> $PGDATA/postgresql.conf
 hot_standby = on
 EOF
 
   echo "Configuring recovery"
-  cp /usr/share/postgresql/9.5/recovery.conf.sample /var/lib/postgresql/data/recovery.conf
+  cp /usr/share/postgresql/9.5/recovery.conf.sample $PGDATA/recovery.conf
 
-  cat << EOF >> /var/lib/postgresql/data/recovery.conf
+  cat << EOF >> $PGDATA/recovery.conf
   standby_mode = on
   primary_conninfo = 'host=${master_node} port=5432 user=postgres'
 EOF
@@ -131,19 +142,28 @@ EOF
 
   # echo ""
 
+  #Stop postgres to avoid postmaster.pid not found errors
+  # su -c "pg_ctl stop -D $PGDATA/" postgres
+  #
   #Start postgres
-  su -c "/usr/lib/postgresql/9.5/bin/pg_ctl start -D /var/lib/postgresql/data/" postgres
+    echo "Starting postgres"
+    gosu postgres pg_ctl -D "$PGDATA" \
+			-o "-c listen_addresses='localhost'" \
+			-w start
+
+
+    echo "Done configuring slave"
 }
 
 function configure_replica() {
   echo "Configuring replica"
-  su -c "/usr/lib/postgresql/9.5/bin/pg_ctl stop -D /var/lib/postgresql/data/" postgres
+  su -c "pg_ctl stop -D $PGDATA/" postgres
 
   cp /var/lib/postgres/data/postgresql.conf /tmp/postgresql.conf
 
   slave_node=$(get_host_at_index 1)
 
-  su -c "/usr/lib/postgresql/9.5/bin/pg_basebackup -D /var/lib/postgresql/data -p 5432 -U postgres -v -h ${slave_node} --xlog-method=stream" postgres
+  su -c "pg_basebackup -D $PGDATA -p 5432 -U postgres -v -h ${slave_node} --xlog-method=stream" postgres
 
 
     if [ $? -ne 0 ]; then
@@ -155,8 +175,8 @@ function configure_replica() {
     #Make sure postgres owns everythign, or it will crap out
     chown -R postgres  /var/lib/postgresql
 
-  # /postgres-config/posgres-agent replica configure --data /var/lib/postgresql/data/  --hostname $FQDN --port 5432 --user postgres --pg_conf /var/lib/postgresql/data/postgresql.conf
-  su -c "/usr/lib/postgresql/9.5/bin/pg_ctl start -D /var/lib/postgresql/data/" postgres
+  # /postgres-config/posgres-agent replica configure --data $PGDATA/  --hostname $FQDN --port 5432 --user postgres --pg_conf $PGDATA/postgresql.conf
+  su -c "pg_ctl start -D $PGDATA/" postgres
 }
 
 
