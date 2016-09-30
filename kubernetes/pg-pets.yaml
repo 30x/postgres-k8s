@@ -1,10 +1,11 @@
-# A headless service to create DNS records
+# A headless service to create DNS records for our write
 apiVersion: v1
 kind: Service
 metadata:
-  name: edgexpostgres
+  name: edgexpostgres-write
   labels:
     app: postgres
+    role: master
 spec:
   ports:
   - port: 5432
@@ -13,18 +14,21 @@ spec:
   clusterIP: None
   selector:
     app: postgres
+    role: master
 ---
+#This is the pet set for the master node
 apiVersion: apps/v1alpha1
 kind: PetSet
 metadata:
-  name: edgexpostgres
+  name: edgexpostgres-master
 spec:
-  serviceName: edgexpostgres
-  replicas: 2
+  serviceName: edgexpostgres-write
+  replicas: 1
   template:
     metadata:
       labels:
         app: postgres
+        role: master
       annotations:
         pod.alpha.kubernetes.io/initialized: "true"
     spec:
@@ -37,14 +41,16 @@ spec:
             value: password
           - name: PGDATA
             value: /var/lib/postgresql/data
+          - name: MEMBER_ROLE
+            value: master
+          - name: SYNCHONROUS_REPLICAS
+            value: slave1
         ports:
           - containerPort: 5432
         imagePullPolicy: Always
         volumeMounts:
           - mountPath: /var/lib/postgresql
             name: pg-data
-          - mountPath: /var/lib/otherdata
-            name: other-data
   volumeClaimTemplates:
   - metadata:
       name: pg-data
@@ -55,12 +61,70 @@ spec:
       resources:
         requests:
           storage: 100Gi
+----
+# A headless service to create DNS records for our read
+apiVersion: v1
+kind: Service
+metadata:
+  name: edgexpostgres-read
+  labels:
+    app: postgres
+    role: slave
+spec:
+  ports:
+  - port: 5432
+    name: edgexpostgres
+  # *.edgexpostgres.default.svc.cluster.local
+  clusterIP: None
+  selector:
+    app: postgres
+    role: slave
+---
+#This is the pet set for the master node
+apiVersion: apps/v1alpha1
+kind: PetSet
+metadata:
+  name: edgexpostgres-slave
+spec:
+  serviceName: edgexpostgres-read
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres
+        role: slave
+      annotations:
+        pod.alpha.kubernetes.io/initialized: "true"
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: postgres
+        image: thirtyx/postgres:0.0.1-dev
+        env:
+          - name: POSTGRES_PASSWORD
+            value: password
+          - name: PGDATA
+            value: /var/lib/postgresql/data
+          - name: MEMBER_ROLE
+            value: slave
+          - name: MASTER_ENDPOINT
+            value: edgexpostgres-write
+          - name: SYNCHONROUS_REPLICA
+            value: slave1
+
+        ports:
+          - containerPort: 5432
+        imagePullPolicy: Always
+        volumeMounts:
+          - mountPath: /var/lib/postgresql
+            name: pg-data
+  volumeClaimTemplates:
   - metadata:
-      name: other-data
+      name: pg-data
       annotations:
         volume.alpha.kubernetes.io/storage-class: anything
     spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 10Gi
+          storage: 100Gi
