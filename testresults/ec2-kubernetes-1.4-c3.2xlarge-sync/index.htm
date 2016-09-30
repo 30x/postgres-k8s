@@ -1,0 +1,442 @@
+
+<img src="scaling.png"><p>
+<img src="clients.png"><p>
+<img src="3d.png"><p>
+<h3>Set 1 : </h3>
+Averages for test set 1 by scale:
+<table border="1">
+  <tr>
+    <th align="center">set</th>
+    <th align="center">scale</th>
+    <th align="center">tps</th>
+    <th align="center">avg_latency</th>
+    <th align="center">90%&lt;</th>
+    <th align="center">max_latency</th>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="right">100</td>
+    <td align="right">28804</td>
+    <td align="right">0.284</td>
+    <td align="right">0.371</td>
+    <td align="right">26.915</td>
+  </tr>
+</table>
+<p>(1 row)<br />
+</p>
+Averages for test set 1 by clients:
+<table border="1">
+  <tr>
+    <th align="center">set</th>
+    <th align="center">clients</th>
+    <th align="center">tps</th>
+    <th align="center">avg_latency</th>
+    <th align="center">90%&lt;</th>
+    <th align="center">max_latency</th>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="right">1</td>
+    <td align="right">7580</td>
+    <td align="right">0.128</td>
+    <td align="right">0.146</td>
+    <td align="right">1.042</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="right">2</td>
+    <td align="right">13744</td>
+    <td align="right">0.142</td>
+    <td align="right">0.158</td>
+    <td align="right">3.723</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="right">4</td>
+    <td align="right">23924</td>
+    <td align="right">0.163</td>
+    <td align="right">0.183</td>
+    <td align="right">26.895</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="right">8</td>
+    <td align="right">37282</td>
+    <td align="right">0.21</td>
+    <td align="right">0.263</td>
+    <td align="right">66.935</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="right">16</td>
+    <td align="right">45824</td>
+    <td align="right">0.345</td>
+    <td align="right">0.443</td>
+    <td align="right">16.748</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="right">32</td>
+    <td align="right">44471</td>
+    <td align="right">0.715</td>
+    <td align="right">1.036</td>
+    <td align="right">46.146</td>
+  </tr>
+</table>
+</p>
+Averages for test set 1 by scale and client:
+<table border="1">
+  <tr>
+    <th align="center">set</th>
+    <th align="center">scale</th>
+    <th align="center">clients</th>
+    <th align="center">tps</th>
+    <th align="center">avg_latency</th>
+    <th align="center">90%&lt;</th>
+    <th align="center">max_latency</th>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="right">100</td>
+    <td align="right">1</td>
+    <td align="right">7580</td>
+    <td align="right">0.128</td>
+    <td align="right">0.146</td>
+    <td align="right">1.042</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="right">100</td>
+    <td align="right">2</td>
+    <td align="right">13744</td>
+    <td align="right">0.142</td>
+    <td align="right">0.158</td>
+    <td align="right">3.723</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="right">100</td>
+    <td align="right">4</td>
+    <td align="right">23924</td>
+    <td align="right">0.163</td>
+    <td align="right">0.183</td>
+    <td align="right">26.895</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="right">100</td>
+    <td align="right">8</td>
+    <td align="right">37282</td>
+    <td align="right">0.21</td>
+    <td align="right">0.263</td>
+    <td align="right">66.935</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="right">100</td>
+    <td align="right">16</td>
+    <td align="right">45824</td>
+    <td align="right">0.345</td>
+    <td align="right">0.443</td>
+    <td align="right">16.748</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="right">100</td>
+    <td align="right">32</td>
+    <td align="right">44471</td>
+    <td align="right">0.715</td>
+    <td align="right">1.036</td>
+    <td align="right">46.146</td>
+  </tr>
+</table>
+</p>
+Detail for test set 1:
+<table border="1">
+  <tr>
+    <th align="center">set</th>
+    <th align="center">test</th>
+    <th align="center">scale</th>
+    <th align="center">clients</th>
+    <th align="center">tps</th>
+    <th align="center">max_latency</th>
+    <th align="center">chkpts</th>
+    <th align="center">buf_check</th>
+    <th align="center">buf_clean</th>
+    <th align="center">buf_backend</th>
+    <th align="center">buf_alloc</th>
+    <th align="center">max_clean</th>
+    <th align="center">backend_sync</th>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="1/">1</a></td>
+    <td align="right">100</td>
+    <td align="right">1</td>
+    <td align="right">7564</td>
+    <td align="right">0.703</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">38</td>
+    <td align="right">0</td>
+    <td align="right">760222</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="7/">7</a></td>
+    <td align="right">100</td>
+    <td align="right">1</td>
+    <td align="right">7564</td>
+    <td align="right">1.291</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">35</td>
+    <td align="right">0</td>
+    <td align="right">760136</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="13/">13</a></td>
+    <td align="right">100</td>
+    <td align="right">1</td>
+    <td align="right">7611</td>
+    <td align="right">1.133</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">5</td>
+    <td align="right">0</td>
+    <td align="right">764952</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="2/">2</a></td>
+    <td align="right">100</td>
+    <td align="right">2</td>
+    <td align="right">13436</td>
+    <td align="right">3.43</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">39</td>
+    <td align="right">0</td>
+    <td align="right">1347344</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="8/">8</a></td>
+    <td align="right">100</td>
+    <td align="right">2</td>
+    <td align="right">13449</td>
+    <td align="right">5.565</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">34</td>
+    <td align="right">0</td>
+    <td align="right">1348834</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="14/">14</a></td>
+    <td align="right">100</td>
+    <td align="right">2</td>
+    <td align="right">14348</td>
+    <td align="right">2.175</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">37</td>
+    <td align="right">0</td>
+    <td align="right">1438751</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="3/">3</a></td>
+    <td align="right">100</td>
+    <td align="right">4</td>
+    <td align="right">23981</td>
+    <td align="right">5.107</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">34</td>
+    <td align="right">0</td>
+    <td align="right">2401191</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="9/">9</a></td>
+    <td align="right">100</td>
+    <td align="right">4</td>
+    <td align="right">23907</td>
+    <td align="right">67.882</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">35</td>
+    <td align="right">0</td>
+    <td align="right">2396438</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="15/">15</a></td>
+    <td align="right">100</td>
+    <td align="right">4</td>
+    <td align="right">23885</td>
+    <td align="right">7.695</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">5</td>
+    <td align="right">0</td>
+    <td align="right">2394808</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="4/">4</a></td>
+    <td align="right">100</td>
+    <td align="right">8</td>
+    <td align="right">37476</td>
+    <td align="right">16.252</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">22</td>
+    <td align="right">0</td>
+    <td align="right">3756315</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="10/">10</a></td>
+    <td align="right">100</td>
+    <td align="right">8</td>
+    <td align="right">37483</td>
+    <td align="right">15.816</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">3</td>
+    <td align="right">0</td>
+    <td align="right">3754080</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="16/">16</a></td>
+    <td align="right">100</td>
+    <td align="right">8</td>
+    <td align="right">36887</td>
+    <td align="right">168.738</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">22</td>
+    <td align="right">0</td>
+    <td align="right">3694233</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="5/">5</a></td>
+    <td align="right">100</td>
+    <td align="right">16</td>
+    <td align="right">45775</td>
+    <td align="right">16.068</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">4</td>
+    <td align="right">0</td>
+    <td align="right">4587601</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="11/">11</a></td>
+    <td align="right">100</td>
+    <td align="right">16</td>
+    <td align="right">45732</td>
+    <td align="right">18.296</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">8</td>
+    <td align="right">0</td>
+    <td align="right">4587116</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="17/">17</a></td>
+    <td align="right">100</td>
+    <td align="right">16</td>
+    <td align="right">45966</td>
+    <td align="right">15.879</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">15</td>
+    <td align="right">0</td>
+    <td align="right">4605168</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="6/">6</a></td>
+    <td align="right">100</td>
+    <td align="right">32</td>
+    <td align="right">44673</td>
+    <td align="right">45.767</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">29</td>
+    <td align="right">0</td>
+    <td align="right">4475811</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="12/">12</a></td>
+    <td align="right">100</td>
+    <td align="right">32</td>
+    <td align="right">44231</td>
+    <td align="right">41.13</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">4</td>
+    <td align="right">0</td>
+    <td align="right">4435078</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+  <tr valign="top">
+    <td align="right">1</td>
+    <td align="left"><a href="18/">18</a></td>
+    <td align="right">100</td>
+    <td align="right">32</td>
+    <td align="right">44509</td>
+    <td align="right">51.541</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+    <td align="right">1</td>
+    <td align="right">0</td>
+    <td align="right">4460004</td>
+    <td align="right">0</td>
+    <td align="right">0</td>
+  </tr>
+</table>
+</p>
