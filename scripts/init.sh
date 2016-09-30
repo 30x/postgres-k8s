@@ -5,6 +5,25 @@ function get_host_at_index(){
   #Split the FQDN into parts based on the '.' char
   IFS='.' read -ra hostcomponents <<< "$FQDN"
 
+  part=${hostcomponents[0]}
+
+  # echo "part is ${part}"
+
+  #First index, extract the hostname
+  output=${part%-*}
+  utput="${output}-${indexOut}"
+
+
+  echo $output
+
+
+}
+
+
+function get_fqdn_at_index(){
+  #Split the FQDN into parts based on the '.' char
+  IFS='.' read -ra hostcomponents <<< "$FQDN"
+
   #Get all indexes, so we can iterate them and know the index
   indexes=${!hostcomponents[*]}
 
@@ -48,7 +67,8 @@ function configure_master() {
 
 
   allowed_replicas="10.244.0.0/16"
-  slave_node=$(get_host_at_index 1)
+  slave_node=$(get_fqdn_at_index 1)
+  slave_host=$(get_host_at_index 1)
 
   echo "Configuring $PGDATA/pg_hba.conf for master"
   cat << EOF >> $PGDATA/pg_hba.conf
@@ -67,7 +87,7 @@ archive_command = 'test ! -f $PGDATA/archive/%f && cp %p $PGDATA/archive/%f'
 max_wal_senders = 3
 max_replication_slots = 3
 #synchronous_standby_names = '${slave_node}'
-synchronous_standby_names = '10.244.0.7'
+synchronous_standby_names = '${slave_host}'
 #-------------------------
 # END K8S AUTO CONFIGURE
 #-------------------------
@@ -101,7 +121,8 @@ function configure_slave() {
 
   #configure the system
 
-  master_node=$(get_host_at_index 0)
+  master_node=$(get_fqdn_at_index 0)
+  slave_host=$(get_host_at_index 1)
 
   echo "Beginning bootstrap from host ${master_node}"
 
@@ -129,7 +150,7 @@ EOF
 
   cat << EOF >> $PGDATA/recovery.conf
   standby_mode = on
-  primary_conninfo = 'host=${master_node} port=5432 user=postgres'
+  primary_conninfo = 'host=${master_node} port=5432 user=postgres application_name=${slave_host}'
 EOF
 
 
@@ -161,7 +182,7 @@ function configure_replica() {
 
   cp /var/lib/postgres/data/postgresql.conf /tmp/postgresql.conf
 
-  slave_node=$(get_host_at_index 1)
+  slave_node=$(get_fqdn_at_index 1)
 
   su -c "pg_basebackup -D $PGDATA -p 5432 -U postgres -v -h ${slave_node} --xlog-method=stream" postgres
 
