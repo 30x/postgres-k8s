@@ -4,8 +4,11 @@ COPY scripts/init.sh /docker-entrypoint-initdb.d/
 
 RUN chmod +x /docker-entrypoint-initdb.d/init.sh
 
+COPY scripts/docker-entrypoint.sh /docker-entrypoint.sh
 
+RUN chmod +x /docker-entrypoint.sh
 
+ENTRYPOINT ["/docker-entrypoint.sh"]
 
 # -------------
 # This is for debugging purposes only.  This will start the container then block,
