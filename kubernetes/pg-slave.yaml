@@ -1,0 +1,52 @@
+#This is the pet set for the a slave node
+# Note that CLUSER_NAME_TO_REPLACE  and SLAVE_INDEX are meant to be replaced
+# with template processing
+apiVersion: apps/v1alpha1
+kind: PetSet
+metadata:
+  name: CLUSER_NAME_TO_REPLACE-SLAVE_INDEX
+spec:
+  serviceName: CLUSER_NAME_TO_REPLACE-read
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres
+        role: slave
+        cluster: CLUSER_NAME_TO_REPLACE
+      annotations:
+        pod.alpha.kubernetes.io/initialized: "true"
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: postgres
+        image: thirtyx/postgres:0.0.1-dev
+        env:
+          - name: POSTGRES_PASSWORD
+            value: password
+          - name: PGDATA
+            value: /var/lib/postgresql/data
+          - name: MEMBER_ROLE
+            value: slave
+          - name: MASTER_ENDPOINT
+            value: CLUSER_NAME_TO_REPLACE-write
+            #The name of the synchronous replica.  This will need to be included
+            # in the string for the variable of the master node
+          - name: SYNCHONROUS_REPLICA
+            value: SLAVE_INDEX
+        ports:
+          - containerPort: 5432
+        imagePullPolicy: Always
+        volumeMounts:
+          - mountPath: /var/lib/postgresql
+            name: pg-data
+  volumeClaimTemplates:
+  - metadata:
+      name: pg-data
+      annotations:
+        volume.alpha.kubernetes.io/storage-class: anything
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 100Gi

@@ -1,0 +1,41 @@
+# A headless service to create DNS records for our write
+# Note that CLUSER_NAME_TO_REPLACE  is meant to be replaced with template processing
+apiVersion: v1
+kind: Service
+metadata:
+  name: CLUSER_NAME_TO_REPLACE-write
+  labels:
+    app: postgres
+    role: master
+    cluster: CLUSER_NAME_TO_REPLACE
+spec:
+  ports:
+  - port: 5432
+    name: edgexpostgres
+  # *.edgexpostgres.default.svc.cluster.local
+  clusterIP: None
+  selector:
+    app: postgres
+    role: master
+    cluster: CLUSER_NAME_TO_REPLACE
+---
+# A headless service to create DNS records for our read
+apiVersion: v1
+kind: Service
+metadata:
+  name: CLUSER_NAME_TO_REPLACE-read
+  labels:
+    app: postgres
+    role: slave
+    cluster: CLUSER_NAME_TO_REPLACE
+spec:
+  ports:
+  - port: 5432
+    name: edgexpostgres
+  # *.edgexpostgres.default.svc.cluster.local
+  clusterIP: None
+  selector:
+    app: postgres
+    role: slave
+    cluster: CLUSER_NAME_TO_REPLACE
+---

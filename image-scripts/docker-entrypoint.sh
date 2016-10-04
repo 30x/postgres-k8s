@@ -3,7 +3,7 @@
 #------
 # This file is a duplicate of this file.
 # https://github.com/docker-library/postgres/blob/1c0bc9d905d569fead777b9b8e3836e8af1c394c/9.5/docker-entrypoint.sh
-# It does not correctly detect files in an EBS volume.  As a result
+# It does not correctly detect files in an EBS volume.  As a result I'm changing the test for the PG_VERSION file
 #------
 
 set -e

@@ -1,14 +1,14 @@
 FROM postgres:9.5.4
 
-COPY scripts/init.sh /docker-entrypoint-initdb.d/
+COPY image-scripts/init.sh /docker-entrypoint-initdb.d/
 
 RUN chmod +x /docker-entrypoint-initdb.d/init.sh
 
-COPY scripts/docker-entrypoint.sh /docker-entrypoint.sh
+COPY image-scripts/docker-entrypoint.sh /docker-entrypoint.sh
 
 RUN chmod +x /docker-entrypoint.sh
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+#ENTRYPOINT ["/docker-entrypoint.sh"]
 
 # -------------
 # This is for debugging purposes only.  This will start the container then block,
