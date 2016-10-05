@@ -27,6 +27,8 @@ spec:
             value: password
           - name: PGDATA
             value: /var/lib/postgresql/data
+          - name: PGMOUNT
+            value: /var/lib/postgresql
           - name: MEMBER_ROLE
             value: slave
           - name: MASTER_ENDPOINT

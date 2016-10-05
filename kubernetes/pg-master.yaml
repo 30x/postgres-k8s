@@ -26,6 +26,8 @@ spec:
             value: password
           - name: PGDATA
             value: /var/lib/postgresql/data
+          - name: PGMOUNT
+            value: /var/lib/postgresql            
           - name: MEMBER_ROLE
             value: master
           - name: SYNCHONROUS_REPLICAS

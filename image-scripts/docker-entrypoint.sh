@@ -46,9 +46,9 @@ if [ "$1" = 'postgres' ]; then
 
 		echo "INFO: Could not find file $PGDATA/PG_VERSION.  Initializing the system"
 
-		echo "Current data in $PGDATA"
+		echo "Current data in $PGMOUNT"
 
-		ls -al $PGDATA
+		ls -al $PGMOUNT
 
 		eval "gosu postgres initdb $POSTGRES_INITDB_ARGS"
 
