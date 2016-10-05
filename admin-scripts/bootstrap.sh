@@ -37,25 +37,25 @@ kubectl create -f $TEMP_DIR/pg-services.yaml
 SYNCHRNOUS_REPLICAS=""
 
 for index in $(seq 1 ${NUM_SLAVES}); do
-  SLAVE_NAME="slave-$index"
+  # SLAVE_NAME="slave-$index"
 
   echo "Creating slave ${SLAVE_NAME}"
 
   FILENAME="$TEMP_DIR/pg-slave$index.yaml"
 
   sed "s/CLUSER_NAME_TO_REPLACE/$CLUSTER_NAME/g" kubernetes/pg-slave.yaml > $FILENAME
-  sed -i '' "s/SLAVE_INDEX/$SLAVE_NAME/g" $FILENAME
+  sed -i '' "s/SLAVE_INDEX/$index/g" $FILENAME
 
   if [ $index -eq 1 ]; then
-    SYNCHRNOUS_REPLICAS="${SLAVE_NAME}"
+    SYNCHRNOUS_REPLICAS="${index}"
   else
-    SYNCHRNOUS_REPLICAS="${SYNCHRNOUS_REPLICAS},${SLAVE_NAME}"
+    SYNCHRNOUS_REPLICAS="${SYNCHRNOUS_REPLICAS},${index}"
   fi
 
   #Now create the slave in kubernetes
   kubectl create -f $FILENAME
 
-  echo "Created slave ${SLAVE_NAME}"
+  echo "Created slave ${index}"
 done
 
 echo "Creating master node"

@@ -13,6 +13,27 @@ if [ "${1:0:1}" = '-' ]; then
 fi
 
 if [ "$1" = 'postgres' ]; then
+
+	#Wait for the mount of PGDATA to occur
+	if [ ! "$PGMOUNT" ]; then
+		echo "FATAL: You must specify PGMOUNT in order to use this init script."
+		echo "FATAL: This should be equal to the persistent disk mount directory"
+		exit 1
+	fi
+
+	MOUNTINFO=""
+	MOUNT=0
+
+	until [ $MOUNT -eq 1 ]; do
+		echo "INFO: Checking if $PGMOUNT has been mounted"
+		MOUNTINFO=$(df -h | grep $PGMOUNT)
+		MOUNT=$(echo $PGMOUNT|wc -l)
+	done
+
+	echo "INFO: $PGMOUNT has been mounted, continuing"
+	echo "$MOUNTINFO"
+
+
 	mkdir -p "$PGDATA"
 	chmod 700 "$PGDATA"
 	chown -R postgres "$PGDATA"
@@ -22,6 +43,13 @@ if [ "$1" = 'postgres' ]; then
 
 	# look specifically for PG_VERSION, as it is expected in the DB dir
 	if [ ! -f "$PGDATA/PG_VERSION" ]; then
+
+		echo "INFO: Could not find file $PGDATA/PG_VERSION.  Initializing the system"
+
+		echo "Current data in $PGDATA"
+
+		ls -al $PGDATA
+
 		eval "gosu postgres initdb $POSTGRES_INITDB_ARGS"
 
 		# check password first so we can output the warning before postgres
@@ -101,6 +129,8 @@ if [ "$1" = 'postgres' ]; then
 	fi
 
 	exec gosu postgres "$@"
+else
+	echo "INFO: Found $PGDATA/PG_VERSION.  Restarting the system with existing configuration"
 fi
 
 exec "$@"

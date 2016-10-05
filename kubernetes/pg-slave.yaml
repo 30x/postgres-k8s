@@ -4,9 +4,9 @@
 apiVersion: apps/v1alpha1
 kind: PetSet
 metadata:
-  name: CLUSER_NAME_TO_REPLACE-SLAVE_INDEX
+  name: CLUSER_NAME_TO_REPLACE-slave-SLAVE_INDEX
 spec:
-  serviceName: CLUSER_NAME_TO_REPLACE-SLAVE_INDEX
+  serviceName: CLUSER_NAME_TO_REPLACE-slave-SLAVE_INDEX
   replicas: 1
   template:
     metadata:
@@ -14,7 +14,7 @@ spec:
         app: postgres
         role: slave
         cluster: CLUSER_NAME_TO_REPLACE
-        replica: SLAVE_INDEX
+        replica: "SLAVE_INDEX"
       annotations:
         pod.alpha.kubernetes.io/initialized: "true"
     spec:
@@ -34,7 +34,7 @@ spec:
             #The name of the synchronous replica.  This will need to be included
             # in the string for the variable of the master node
           - name: SYNCHONROUS_REPLICA
-            value: SLAVE_INDEX
+            value: "SLAVE_INDEX"
         ports:
           - containerPort: 5432
         imagePullPolicy: Always
@@ -56,12 +56,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: CLUSER_NAME_TO_REPLACE-SLAVE_INDEX
+  name: CLUSER_NAME_TO_REPLACE-slave-SLAVE_INDEX
   labels:
     app: postgres
     role: master
     cluster: CLUSER_NAME_TO_REPLACE
-    replica: SLAVE_INDEX
+    replica: "SLAVE_INDEX"
 spec:
   ports:
   - port: 5432
@@ -72,4 +72,4 @@ spec:
     app: postgres
     role: master
     cluster: CLUSER_NAME_TO_REPLACE
-    replica: SLAVE_INDEX
+    replica: "SLAVE_INDEX"
