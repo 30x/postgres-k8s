@@ -1,4 +1,5 @@
 FROM postgres:9.5.4
+#FROM thirtyx/transicator:0.0.1
 
 COPY image-scripts/init.sh /docker-entrypoint-initdb.d/
 

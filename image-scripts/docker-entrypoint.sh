@@ -14,6 +14,10 @@ fi
 
 if [ "$1" = 'postgres' ]; then
 
+
+#----
+# BEGIN DEBUG code.  This exists to validate fixes for this issue. https://github.com/kubernetes/kubernetes/issues/29324
+#----
 	#Wait for the mount of PGDATA to occur
 	if [ ! "$PGMOUNT" ]; then
 		echo "FATAL: You must specify PGMOUNT in order to use this init script."
@@ -32,19 +36,34 @@ if [ "$1" = 'postgres' ]; then
 
 	echo "INFO: $PGMOUNT has been mounted, continuing"
 	echo "$MOUNTINFO"
+	echo ""
+	echo ""
 
+	echo "DEBUG: Contents of $PGDATA"
+	ls -al $PGDATA
+
+	echo ""
+	echo ""
+
+	#----
+	# END DEBUG code.  This exists to validate fixes for this issue. https://github.com/kubernetes/kubernetes/issues/29324
+	#----
 
 	mkdir -p "$PGDATA"
 	chmod 700 "$PGDATA"
 	chown -R postgres "$PGDATA"
 
+
 	chmod g+s /run/postgresql
 	chown -R postgres /run/postgresql
 
+
+
 	# look specifically for PG_VERSION, as it is expected in the DB dir
-	if [ ! -f "$PGDATA/PG_VERSION" ]; then
+	if [ ! -s "$PGDATA/PG_VERSION" ]; then
 
 		echo "INFO: Could not find file $PGDATA/PG_VERSION.  Initializing the system"
+
 
 		echo "Current data in $PGMOUNT"
 
@@ -129,8 +148,6 @@ if [ "$1" = 'postgres' ]; then
 	fi
 
 	exec gosu postgres "$@"
-else
-	echo "INFO: Found $PGDATA/PG_VERSION.  Restarting the system with existing configuration"
 fi
 
 exec "$@"
