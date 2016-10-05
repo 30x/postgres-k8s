@@ -21,7 +21,7 @@ spec:
       terminationGracePeriodSeconds: 0
       containers:
       - name: postgres
-        image: thirtyx/postgres:0.0.1-dev
+        image: thirtyx/postgres:0.0.1
         env:
           - name: POSTGRES_PASSWORD
             value: password
@@ -39,7 +39,7 @@ spec:
             value: "SLAVE_INDEX"
         ports:
           - containerPort: 5432
-        imagePullPolicy: Always
+        #imagePullPolicy: Always
         volumeMounts:
           - mountPath: /var/lib/postgresql
             name: pg-data
