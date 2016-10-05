@@ -46,7 +46,7 @@ for index in $(seq 1 ${NUM_SLAVES}); do
   sed "s/CLUSER_NAME_TO_REPLACE/$CLUSTER_NAME/g" kubernetes/pg-slave.yaml > $FILENAME
   sed -i '' "s/SLAVE_INDEX/$SLAVE_NAME/g" $FILENAME
 
-  if [ ! -z  $SYNCHRNOUS_REPLICAS ]; then
+  if [ $index -eq 1 ]; then
     SYNCHRNOUS_REPLICAS="${SLAVE_NAME}"
   else
     SYNCHRNOUS_REPLICAS="${SYNCHRNOUS_REPLICAS},${SLAVE_NAME}"
@@ -59,6 +59,7 @@ for index in $(seq 1 ${NUM_SLAVES}); do
 done
 
 echo "Creating master node"
+echo "SYNCHRNOUS_REPLICAS are $SYNCHRNOUS_REPLICAS"
 
 FILENAME="$TEMP_DIR/pg-master.yaml"
 
@@ -71,8 +72,10 @@ kubectl create -f $FILENAME
 
 echo "Created master node"
 
-
-echo "\n\n\n"
+echo ""
+echo ""
+echo "##########"
+echo ""
 
 echo "Creation complete"
 echo "Write service endpoint is $CLUSTER_NAME-write"

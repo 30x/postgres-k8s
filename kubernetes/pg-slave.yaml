@@ -6,7 +6,7 @@ kind: PetSet
 metadata:
   name: CLUSER_NAME_TO_REPLACE-SLAVE_INDEX
 spec:
-  serviceName: CLUSER_NAME_TO_REPLACE-read
+  serviceName: CLUSER_NAME_TO_REPLACE-SLAVE_INDEX
   replicas: 1
   template:
     metadata:
@@ -14,6 +14,7 @@ spec:
         app: postgres
         role: slave
         cluster: CLUSER_NAME_TO_REPLACE
+        replica: SLAVE_INDEX
       annotations:
         pod.alpha.kubernetes.io/initialized: "true"
     spec:
@@ -50,3 +51,25 @@ spec:
       resources:
         requests:
           storage: 100Gi
+---
+# A headless service to create DNS records for our petset.  Unfortunately required, though they should most likely never be used
+apiVersion: v1
+kind: Service
+metadata:
+  name: CLUSER_NAME_TO_REPLACE-SLAVE_INDEX
+  labels:
+    app: postgres
+    role: master
+    cluster: CLUSER_NAME_TO_REPLACE
+    replica: SLAVE_INDEX
+spec:
+  ports:
+  - port: 5432
+    name: edgexpostgres
+  # *.edgexpostgres.default.svc.cluster.local
+  clusterIP: None
+  selector:
+    app: postgres
+    role: master
+    cluster: CLUSER_NAME_TO_REPLACE
+    replica: SLAVE_INDEX
