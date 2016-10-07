@@ -41,9 +41,9 @@ for index in $(seq 1 ${NUM_SLAVES}); do
 
   echo "Creating slave ${SLAVE_NAME}"
 
-  FILENAME="$TEMP_DIR/pg-slave$index.yaml"
+  FILENAME="$TEMP_DIR/pg-slave-rs-$index.yaml"
 
-  sed "s/CLUSER_NAME_TO_REPLACE/$CLUSTER_NAME/g" kubernetes/pg-slave.yaml > $FILENAME
+  sed "s/CLUSER_NAME_TO_REPLACE/$CLUSTER_NAME/g" kubernetes/pg-slave-rs.yaml > $FILENAME
   sed -i '' "s/SLAVE_INDEX/$index/g" $FILENAME
 
   if [ $index -eq 1 ]; then
@@ -61,9 +61,9 @@ done
 echo "Creating master node"
 echo "SYNCHRNOUS_REPLICAS are $SYNCHRNOUS_REPLICAS"
 
-FILENAME="$TEMP_DIR/pg-master.yaml"
+FILENAME="$TEMP_DIR/pg-master-rs.yaml"
 
-sed "s/CLUSER_NAME_TO_REPLACE/$CLUSTER_NAME/g" kubernetes/pg-master.yaml > $FILENAME
+sed "s/CLUSER_NAME_TO_REPLACE/$CLUSTER_NAME/g" kubernetes/pg-master-rs.yaml > $FILENAME
 
 sed -i '' "s/SLAVE_NAMES/$SYNCHRNOUS_REPLICAS/g" $FILENAME
 

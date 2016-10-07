@@ -15,14 +15,14 @@ spec:
       terminationGracePeriodSeconds: 0
       containers:
       - name: postgres
-        image: thirtyx/postgres:0.0.1
+        image: thirtyx/postgres:0.0.2-dev
         env:
           - name: POSTGRES_PASSWORD
             value: password
           - name: PGDATA
-            value: /var/lib/postgresql/data
+            value: /pgdata/data
           - name: PGMOUNT
-            value: /var/lib/postgresql
+            value: /pgdata
           - name: MEMBER_ROLE
             value: master
           - name: SYNCHONROUS_REPLICAS
@@ -30,9 +30,9 @@ spec:
         ports:
           - containerPort: 5432
         volumeMounts:
-        - mountPath: /var/lib/postgresql
+        - mountPath: /pgdata
           name:  pg-data-CLUSER_NAME_TO_REPLACE-master
-        #imagePullPolicy: Always
+        imagePullPolicy: Always
       volumes:
       - name: pg-data-CLUSER_NAME_TO_REPLACE-master
         persistentVolumeClaim:

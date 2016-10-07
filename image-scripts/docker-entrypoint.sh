@@ -39,11 +39,11 @@ if [ "$1" = 'postgres' ]; then
 	echo ""
 	echo ""
 
-	echo "DEBUG: Contents of $PGDATA"
-	ls -al $PGDATA
-
-	echo ""
-	echo ""
+	# echo "DEBUG: Contents of $PGDATA"
+	# ls -al $PGDATA
+	#
+	# echo ""
+	# echo ""
 
 	#----
 	# END DEBUG code.  This exists to validate fixes for this issue. https://github.com/kubernetes/kubernetes/issues/29324

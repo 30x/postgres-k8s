@@ -1,4 +1,4 @@
-IMAGE_VERSION=0.0.1
+IMAGE_VERSION=0.0.2-dev
 
 build-and-push: build push-to-hub
 
