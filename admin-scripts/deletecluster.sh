@@ -31,9 +31,7 @@ done
 
 shift "$((OPTIND-1))" # Shift off the options and optional --.
 
-echo "Args are $@"
-
-if [ $1 == "" ]; then
+if [ "$1" == "" ]; then
   echo "You must specify a cluster name"
   show_help
   exit 1
@@ -43,7 +41,7 @@ fi
 REPLICA_SETS=$(kubectl get rs | grep "$1-"|awk '{print $1}')
 
 for rs in $REPLICA_SETS; do
-  echo "deleting replica set $rs-"
+  echo "deleting replica set $rs"
   kubectl delete rs $rs
 done
 

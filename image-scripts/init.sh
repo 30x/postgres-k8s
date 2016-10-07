@@ -2,7 +2,7 @@
 
 
 
-#Configure the master
+#Configure the master 
 function configure_master() {
   echo "Configuring master"
 

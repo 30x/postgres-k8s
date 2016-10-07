@@ -3,10 +3,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: CLUSER_NAME_TO_REPLACE-write
+  name: postgres-CLUSER_NAME_TO_REPLACE-write
   labels:
     app: postgres
-    role: master
+    type: write
     cluster: CLUSER_NAME_TO_REPLACE
 spec:
   ports:
@@ -16,17 +16,18 @@ spec:
   clusterIP: None
   selector:
     app: postgres
-    role: master
+    #An additive property.  This is just a flag that's added and removed to signal the master
+    master: "true"
     cluster: CLUSER_NAME_TO_REPLACE
 ---
 # A headless service to create DNS records for our read
 apiVersion: v1
 kind: Service
 metadata:
-  name: CLUSER_NAME_TO_REPLACE-read
+  name: postgres-CLUSER_NAME_TO_REPLACE-read
   labels:
     app: postgres
-    role: slave
+    type: read
     cluster: CLUSER_NAME_TO_REPLACE
 spec:
   ports:
@@ -36,6 +37,6 @@ spec:
   clusterIP: None
   selector:
     app: postgres
-    role: slave
+    read: "true"
     cluster: CLUSER_NAME_TO_REPLACE
 ---

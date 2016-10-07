@@ -9,6 +9,10 @@ COPY image-scripts/docker-entrypoint.sh /docker-entrypoint.sh
 
 RUN chmod +x /docker-entrypoint.sh
 
+COPY image-scripts/failover.sh /
+
+RUN chmod +x /failover.sh
+
 #ENTRYPOINT ["/docker-entrypoint.sh"]
 
 # -------------

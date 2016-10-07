@@ -1,4 +1,3 @@
----
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -23,9 +22,9 @@ spec:
     metadata:
       labels:
         app: postgres
-        role: slave
+        role: master
         cluster: CLUSER_NAME_TO_REPLACE
-        read: "true"
+        master: "true"
         index: "DISK_INDEX"
     spec:
       terminationGracePeriodSeconds: 0
@@ -40,13 +39,11 @@ spec:
           - name: PGMOUNT
             value: /pgdata
           - name: MEMBER_ROLE
-            value: slave
-          - name: MASTER_ENDPOINT
-            value: postgres-CLUSER_NAME_TO_REPLACE-write
-            #The name of the synchronous replica.  This will need to be included
-            # in the string for the variable of the master node
-          - name: SYNCHONROUS_REPLICA
-            value: "SLAVE_INDEX"
+            value: master
+          - name: SYNCHONROUS_REPLICAS
+            value: "SLAVE_NAMES"
+        #Forces the entrypoint for PG configuration to run
+        command: ["/failover.sh"]
         ports:
           - containerPort: 5432
         volumeMounts:
@@ -64,4 +61,4 @@ spec:
   #       app: postgres
   #       role: master
   #       cluster: CLUSER_NAME_TO_REPLACE
-  #       mountid1234: mountid1234
+  #       MOUNT_ID: MOUNT_ID
