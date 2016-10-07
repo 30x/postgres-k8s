@@ -65,7 +65,7 @@ FILENAME="$TEMP_DIR/pg-master.yaml"
 
 sed "s/CLUSER_NAME_TO_REPLACE/$CLUSTER_NAME/g" kubernetes/pg-master.yaml > $FILENAME
 
-sed -i '' "s/SLAVE_INDEX/$SYNCHRNOUS_REPLICAS/g" $FILENAME
+sed -i '' "s/SLAVE_NAMES/$SYNCHRNOUS_REPLICAS/g" $FILENAME
 
 #Now start master
 kubectl create -f $FILENAME

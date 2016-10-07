@@ -1,0 +1,64 @@
+apiVersion: extensions/v1beta1
+kind: ReplicaSet
+metadata:
+  name: CLUSER_NAME_TO_REPLACE-master
+spec:
+  # Always 1 replica, we have a different RC per
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres
+        role: slave
+        cluster: CLUSER_NAME_TO_REPLACE
+        replica: "SLAVE_INDEX"
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: postgres
+        image: thirtyx/postgres:0.0.1
+        env:
+          - name: POSTGRES_PASSWORD
+            value: password
+          - name: PGDATA
+            value: /var/lib/postgresql/data
+          - name: PGMOUNT
+            value: /var/lib/postgresql
+          - name: MEMBER_ROLE
+            value: slave
+          - name: MASTER_ENDPOINT
+            value: CLUSER_NAME_TO_REPLACE-write
+            #The name of the synchronous replica.  This will need to be included
+            # in the string for the variable of the master node
+          - name: SYNCHONROUS_REPLICA
+            value: "SLAVE_INDEX"
+        ports:
+          - containerPort: 5432
+        volumeMounts:
+        - mountPath: /var/lib/postgresql
+          name:  pg-data-CLUSER_NAME_TO_REPLACE-slave-SLAVE_INDEX
+        #imagePullPolicy: Always
+      volumes:
+      - name: pg-data-CLUSER_NAME_TO_REPLACE-slave-SLAVE_INDEX
+        persistentVolumeClaim:
+          claimName: pg-data-CLUSER_NAME_TO_REPLACE-slave-SLAVE_INDEX
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pg-data-CLUSER_NAME_TO_REPLACE-slave-SLAVE_INDEX
+  annotations:
+    volume.beta.kubernetes.io/storage-class: postgres
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  # selector:
+  #   matchLabels:
+  #       app: postgres
+  #       role: master
+  #       cluster: CLUSER_NAME_TO_REPLACE
+  #       mountid1234: mountid1234
