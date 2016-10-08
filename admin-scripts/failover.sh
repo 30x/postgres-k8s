@@ -13,18 +13,23 @@ if [ "$1" == "" ]; then
   exit 1
 fi
 
+MASTER_POD=$(kubectl get po --no-headers -l "app=postgres,cluster=$1,master=true"|wc -l)
+
+if [ "$MASTER_POD" -eq 1 ]; then
+  echo "The master already appears running. Short circuting"
+  exit 1
+fi
+
+
 #Get only healthy running pods for the cluster that are a slave
-REMAINING_PODS=$(kubectl get po |grep "postgres-$1-" |grep "Running"|awk '{print $1}'|sort)
+REMAINING_PODS=$(kubectl get po --no-headers -l "app=postgres,cluster=$1"|grep "Running"|awk '{print $1}'|sort)
 
 if [ "$REMAINING_PODS" == "" ]; then
   echo "No pods could be found"
   exit 1
 fi
 
-if [ "$(echo $REMAINING_PODS |grep postgres-$1-0 |wc -l)" -eq 1 ]; then
-  echo "The master already appears running. Short circuting"
-  exit 1
-fi
+
 
 
 #Allow the user to select a pod
