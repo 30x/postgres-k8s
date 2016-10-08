@@ -2,7 +2,7 @@
 
 
 
-#Configure the master 
+#Configure the master
 function configure_master() {
   echo "Configuring master"
 
@@ -82,7 +82,7 @@ function configure_slave() {
 
 
   #DELETE the configuration from the master if we're doing sync replication
-  sed -i -- '/.*START K8S/,/.*END K8S/d'  $PGDATA/postgresql.conf
+  # sed -i -- '/.*START K8S/,/.*END K8S/d'  $PGDATA/postgresql.conf
 
   cat << EOF >> $PGDATA/postgresql.conf
 hot_standby = on
@@ -94,11 +94,12 @@ EOF
   cat << EOF >> $PGDATA/recovery.conf
   standby_mode = on
   primary_conninfo = 'host=$MASTER_ENDPOINT port=5432 user=postgres application_name=$SYNCHONROUS_REPLICA'
+  trigger_file = '/tmp/postgresql.trigger.5432'
 EOF
 
 
   #Make sure postgres owns everythign, or it will crap out
-  chown -R postgres  /var/lib/postgresql
+  chown -R postgres  $PGDATA
 
 
   #copy over the original postgres conf
