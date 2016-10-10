@@ -53,12 +53,12 @@ kubectl get po -l app=postgres,cluster=test
 In the event a region with the master pod dies, a failover to a slave is required.  To perform a failover, you must manually run the failover command.  
 Eventually this will be an automated process that fails over to a slave automatically in the event the master pod terminates and cannot be recovered.
 
-Simulate a pod death by completely removing the Replication Service(RS)
+Simulate a pod death by completely removing the master's Replication Service(RS).  This will halt all streaming to the slaves.
 ```
 kubectl get po -l app=postgres,cluster=test,master=true
 ```
 
-Then take the suffix, and delete the RS with the following command.
+Then take the suffix, and delete the RS with the following command.  This assumed the pod was of the format `postgres-test-0-{some id}`.
 
 ```
 kubectl delete rs postgres-test-0
@@ -70,7 +70,11 @@ You will now see both slaves are unable to connect to the master by using log --
 ./admin-scripts/failover.sh test
 ```
 
-Pick a node to fail over to. After the execution of the kubectl you will notice the pod you have selected is the master, the service points to it, and replication is restored.  At this point, you should use the addreplica.sh script to scale out to return your cluster to 1 mater and synchrnous replicas
+Pick a node to fail over to. After the execution of the kubectl you will notice the pod you have selected is the master, the service points to it, and replication is restored.  At this point, you should use the addreplica.sh script to scale out to return your cluster to 1 mater and synchrnous replicas.  You can verify the master is up and running by selecting the master pod.
+
+```
+kubectl get po -l app=postgres,cluster=test,master=true
+```
 
 ## Adding Read Capacity
 
