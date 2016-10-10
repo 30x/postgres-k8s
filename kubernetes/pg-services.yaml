@@ -7,7 +7,7 @@ metadata:
   labels:
     app: postgres
     type: write
-    cluster: CLUSER_NAME_TO_REPLACE
+    cluster: "CLUSER_NAME_TO_REPLACE"
 spec:
   ports:
   - port: 5432
@@ -18,7 +18,7 @@ spec:
     app: postgres
     #An additive property.  This is just a flag that's added and removed to signal the master
     master: "true"
-    cluster: CLUSER_NAME_TO_REPLACE
+    cluster: "CLUSER_NAME_TO_REPLACE"
 ---
 # A headless service to create DNS records for our read
 apiVersion: v1
@@ -28,7 +28,7 @@ metadata:
   labels:
     app: postgres
     type: read
-    cluster: CLUSER_NAME_TO_REPLACE
+    cluster: "CLUSER_NAME_TO_REPLACE"
 spec:
   ports:
   - port: 5432
@@ -38,5 +38,5 @@ spec:
   selector:
     app: postgres
     read: "true"
-    cluster: CLUSER_NAME_TO_REPLACE
+    cluster: "CLUSER_NAME_TO_REPLACE"
 ---

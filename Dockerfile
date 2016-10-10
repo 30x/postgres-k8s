@@ -9,9 +9,13 @@ COPY image-scripts/docker-entrypoint.sh /docker-entrypoint.sh
 
 RUN chmod +x /docker-entrypoint.sh
 
-COPY image-scripts/setreplicas.sh /
+RUN mkdir -p /clusterutils
 
-RUN chmod +x /setreplicas.sh
+COPY image-scripts/setreplicas.sh /clusterutils
+
+COPY image-scripts/testdb.sh /clusterutils
+
+RUN chmod +x -R /clusterutils
 
 
 # -------------

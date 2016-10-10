@@ -13,12 +13,12 @@ if [ "$1" == "" ]; then
   exit 1
 fi
 
-# MASTER_POD=$(kubectl get po --no-headers -l "app=postgres,cluster=$1,master=true"|wc -l)
-#
-# if [ "$MASTER_POD" -eq 1 ]; then
-#   echo "The master already appears running. Short circuting"
-#   exit 1
-# fi
+MASTER_POD=$(kubectl get po --no-headers -l "app=postgres,cluster=$1,master=true"|awk '{print $1}')
+
+if [ "$MASTER_POD" != "" ]; then
+  echo "The master already appears running in pod $MASTER_POD. Short circuting"
+  exit 1
+fi
 
 
 #Get only healthy running pods for the cluster that are a slave
@@ -68,13 +68,22 @@ done
 echo "New slaves to set into master PG is $NEW_SLAVES"
 
 #Create the touch file to promote the server to master
-kubectl  exec $POD bash /setreplicas.sh $NEW_SLAVES
+kubectl  exec $POD bash /clusterutils/setreplicas.sh $NEW_SLAVES
+
+echo "Signaling to pod $POD to become active master"
 
 kubectl exec -ti $POD /usr/bin/touch /tmp/postgresql.trigger.5432
 
-#Add the label so that the write/replication service endpoint picks up the new service
+echo "Labeling the new pod as the master"
+
 kubectl label pods $POD master=true
 
-#TODO add sanity checks here for failover to ensure it's functioning correctly
+echo "Testing the new master.  If this takes longer than 30 seconds, the failover may not have worked.  Verify manually"
+#Add the label so that the write/replication service endpoint picks up the new service
+SUMRESULT=$(kubectl  exec $POD bash /clusterutils/testdb.sh | grep sum | grep 10 |wc -l)
 
-#echo "If you have an old master running, you may now safely remove"
+if [ $SUMRESULT -eq 1 ]; then
+  echo "SUCCESS: Master is successfully running and replicating to other replicas"
+else
+  echo "FAILURE: Could not create a test database on the master. Something is incorrect with the current replication setup"
+fi

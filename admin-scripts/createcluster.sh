@@ -19,9 +19,11 @@ NUM_SLAVES="2"
 
 echo "Args are $@"
 
-if [  ! -z $2]; then
+if [  "$2" != "" ]; then
   NUM_SLAVES=$2
 fi
+
+echo "Number of slave nodes is $NUM_SLAVES"
 
 CLUSTER_NAME=$1
 
@@ -91,3 +93,38 @@ echo ""
 echo "Creation complete"
 echo "Write service endpoint is postgres-$CLUSTER_NAME-write"
 echo "Read service endpoint is postgres-$CLUSTER_NAME-read"
+
+
+
+
+
+#Set the number of expected running pods
+EXPECTED=$(( $NUM_SLAVES + 1 ))
+RUNNING=0
+
+echo "Waiting for $EXPECTED pods to start"
+
+while [  $RUNNING -lt $EXPECTED ]; do
+  RUNNING=$(kubectl get po --no-headers -l "app=postgres,cluster=$CLUSTER_NAME" |grep Running|wc -l)
+  echo "$RUNNING pods running. Waiting for $EXPECTED total."
+  sleep 1
+done
+
+
+
+MASTER_POD=""
+
+while [  "$MASTER_POD" == "" ]; do
+  MASTER_POD=$(kubectl get po --no-headers -l "app=postgres,cluster=$CLUSTER_NAME,master=true"| grep Running |awk '{print $1}')
+done
+
+echo "Testing the master for functional connection. This may take up to 2 minutes."
+
+echo ""
+SUMRESULT=$(kubectl  exec $MASTER_POD bash /clusterutils/testdb.sh | grep sum | grep 10 |wc -l)
+
+if [ $SUMRESULT -eq 1 ]; then
+  echo "SUCCESS: Master is successfully running and replicating to other replicas"
+else
+  echo "FAILURE: Could not create a test database on the master. Something is incorrect with the current replication setup"
+fi

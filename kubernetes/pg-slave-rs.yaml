@@ -5,6 +5,10 @@ metadata:
   name: pg-data-CLUSER_NAME_TO_REPLACE-DISK_INDEX
   annotations:
     volume.beta.kubernetes.io/storage-class: postgresv1
+  labels:
+    app: postgres
+    cluster: "CLUSER_NAME_TO_REPLACE"
+    index: "DISK_INDEX"
 spec:
   accessModes:
     - ReadWriteOnce
@@ -24,7 +28,7 @@ spec:
       labels:
         app: postgres
         role: slave
-        cluster: CLUSER_NAME_TO_REPLACE
+        cluster: "CLUSER_NAME_TO_REPLACE"
         read: "true"
         index: "DISK_INDEX"
     spec:
