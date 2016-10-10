@@ -9,15 +9,14 @@ COPY image-scripts/docker-entrypoint.sh /docker-entrypoint.sh
 
 RUN chmod +x /docker-entrypoint.sh
 
-COPY image-scripts/failover.sh /
+COPY image-scripts/setreplicas.sh /
 
-RUN chmod +x /failover.sh
+RUN chmod +x /setreplicas.sh
 
-#ENTRYPOINT ["/docker-entrypoint.sh"]
 
 # -------------
 # This is for debugging purposes only.  This will start the container then block,
-# allowing the user to interactively launch a bash shell into the container to run and debug
+# allowing the user to interactively launch a bash shell into the container to run and debug and configure start and stop PG without a container reboot
 # -------------
 #
 #COPY scripts/forever.sh /

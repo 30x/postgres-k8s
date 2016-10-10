@@ -13,12 +13,12 @@ if [ "$1" == "" ]; then
   exit 1
 fi
 
-MASTER_POD=$(kubectl get po --no-headers -l "app=postgres,cluster=$1,master=true"|wc -l)
-
-if [ "$MASTER_POD" -eq 1 ]; then
-  echo "The master already appears running. Short circuting"
-  exit 1
-fi
+# MASTER_POD=$(kubectl get po --no-headers -l "app=postgres,cluster=$1,master=true"|wc -l)
+#
+# if [ "$MASTER_POD" -eq 1 ]; then
+#   echo "The master already appears running. Short circuting"
+#   exit 1
+# fi
 
 
 #Get only healthy running pods for the cluster that are a slave
@@ -40,8 +40,36 @@ do
 done
 
 
+#Get the new master's index, so that we skip it when listing the rest
+NEW_MASTER_INDEX=$(kubectl get po $POD -o='jsonpath={$.metadata.labels.index}')
+
+
+#GET ALL running system's index
+ALL_INDEXES=$(kubectl get po -l "app=postgres,cluster=$1" -o='jsonpath={$.items[*].metadata.labels.index}')
+
+#The list of new slaves to construct
+NEW_SLAVES=""
+
+for index in $ALL_INDEXES; do
+  #SKIP the new master index
+  if [ "$index" == "$NEW_MASTER_INDEX" ]; then
+    continue
+  fi
+
+  if [ "$NEW_SLAVES" == "" ]; then
+    NEW_SLAVES="${index}"
+  else
+    NEW_SLAVES="${NEW_SLAVES},${index}"
+  fi
+
+done
+
+
+echo "New slaves to set into master PG is $NEW_SLAVES"
 
 #Create the touch file to promote the server to master
+kubectl  exec $POD bash /setreplicas.sh $NEW_SLAVES
+
 kubectl exec -ti $POD /usr/bin/touch /tmp/postgresql.trigger.5432
 
 #Add the label so that the write/replication service endpoint picks up the new service
@@ -49,4 +77,4 @@ kubectl label pods $POD master=true
 
 #TODO add sanity checks here for failover to ensure it's functioning correctly
 
-echo "If you have an old master running, you may now safely remove"
+#echo "If you have an old master running, you may now safely remove"
