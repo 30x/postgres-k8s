@@ -1,5 +1,8 @@
-FROM postgres:9.5.4
-#FROM thirtyx/transicator:0.0.1
+#FROM postgres:9.5.4
+FROM thirtyx/transicator:0.0.1
+
+#Remove scripts installed for dev purposes.  We want our utilities to configure the images
+RUN rm -rf /docker-entrypoint-initdb.d/*
 
 COPY image-scripts/init.sh /docker-entrypoint-initdb.d/
 
@@ -16,6 +19,7 @@ COPY image-scripts/setreplicas.sh /clusterutils
 COPY image-scripts/testdb.sh /clusterutils
 
 RUN chmod +x -R /clusterutils
+
 
 
 # -------------

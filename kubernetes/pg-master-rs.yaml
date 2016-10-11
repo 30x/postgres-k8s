@@ -46,6 +46,8 @@ spec:
             value: master
           - name: SYNCHONROUS_REPLICAS
             value: "SLAVE_NAMES"
+          - name: WAL_LEVEL
+            value: logical
         ports:
           - containerPort: 5432
         volumeMounts:

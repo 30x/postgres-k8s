@@ -48,9 +48,9 @@ Performing a select of the pods with a get will show the pods restarting
 kubectl get po -l app=postgres,cluster=test
 ```
 
-## Testing Region Failure
+## Testing Availability Zone Failure
 
-In the event a region with the master pod dies, a failover to a slave is required.  To perform a failover, you must manually run the failover command.  
+In the event an AZ with the master pod dies, a failover to a slave is required.  To perform a failover, you must manually run the failover command.  
 Eventually this will be an automated process that fails over to a slave automatically in the event the master pod terminates and cannot be recovered.
 
 Simulate a pod death by completely removing the master's Replication Service(RS).  This will halt all streaming to the slaves.

@@ -127,4 +127,7 @@ if [ $SUMRESULT -eq 1 ]; then
   echo "SUCCESS: Master is successfully running and replicating to other replicas"
 else
   echo "FAILURE: Could not create a test database on the master. Something is incorrect with the current replication setup"
+  exit 1
 fi
+
+./admin-scripts/getexternallb.sh $CLUSTER_NAME

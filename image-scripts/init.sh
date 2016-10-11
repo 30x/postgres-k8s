@@ -27,13 +27,13 @@ EOF
 #-------------------------
 # START K8S AUTO CONFIGURE
 #-------------------------
-wal_level = hot_standby
+wal_level = $WAL_LEVEL
 archive_mode = on
 archive_command = 'test ! -f $PGDATA/archive/%f && cp %p $PGDATA/archive/%f'
 max_wal_senders = 10
 #TODO.  These are 16mb each, we should be fine, but during stress tests we need to see how quickly we overrun this number
 wal_keep_segments = 20
-max_replication_slots = 3
+max_replication_slots = 10
 #synchronous_standby_names = '${slave_node}'
 synchronous_standby_names = '$SYNCHONROUS_REPLICAS'
 #-------------------------
