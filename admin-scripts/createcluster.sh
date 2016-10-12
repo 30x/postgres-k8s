@@ -16,6 +16,7 @@ if [ $1 == ""]; then
 fi
 
 NUM_SLAVES="2"
+STORAGE_CLASS="postgresv1"
 
 echo "Args are $@"
 
@@ -26,6 +27,17 @@ fi
 echo "Number of slave nodes is $NUM_SLAVES"
 
 CLUSTER_NAME=$1
+
+echo "Checking for PG storage class"
+
+PG_CLASS=$(kubectl get storageclass $STORAGE_CLASS 2>&1| grep "not found")
+
+if [ "$PG_CLASS" != "" ];then
+  echo "$STORAGE_CLASS not found, creating it"
+  kubectl create -f kubernetes/storageclass.yaml
+else
+  echo "$STORAGE_CLASS storage class found"
+fi
 
 #Create a temporary directory to process files
 TEMP_DIR=$(mktemp -d)
@@ -107,7 +119,7 @@ echo "Waiting for $EXPECTED pods to start"
 while [  $RUNNING -lt $EXPECTED ]; do
   RUNNING=$(kubectl get po --no-headers -l "app=postgres,cluster=$CLUSTER_NAME" |grep Running|wc -l)
   echo "$RUNNING pods running. Waiting for $EXPECTED total."
-  sleep 1
+  sleep 3
 done
 
 
