@@ -3,7 +3,7 @@ IMAGE_VERSION=0.0.2-dev
 build-and-push: build push-to-hub
 
 build:
-	docker build -t thirtyx/postgres .
+	docker build -t thirtyx/postgres docker-image
 
 build-dev: compile build-image push-to-dev
 

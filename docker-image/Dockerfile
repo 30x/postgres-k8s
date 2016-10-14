@@ -4,19 +4,15 @@ FROM thirtyx/transicator:0.0.1
 #Remove scripts installed for dev purposes.  We want our utilities to configure the images
 RUN rm -rf /docker-entrypoint-initdb.d/*
 
-COPY image-scripts/init.sh /docker-entrypoint-initdb.d/
+COPY init.sh /docker-entrypoint-initdb.d/
 
 RUN chmod +x /docker-entrypoint-initdb.d/init.sh
 
-COPY image-scripts/docker-entrypoint.sh /docker-entrypoint.sh
+#We don't need this.  This is the default script with extra debugging
+#COPY docker-entrypoint.sh /docker-entrypoint.sh
+#RUN chmod +x /docker-entrypoint.sh
 
-RUN chmod +x /docker-entrypoint.sh
-
-RUN mkdir -p /clusterutils
-
-COPY image-scripts/setreplicas.sh /clusterutils
-
-COPY image-scripts/testdb.sh /clusterutils
+COPY clusterutils /clusterutils
 
 RUN chmod +x -R /clusterutils
 
