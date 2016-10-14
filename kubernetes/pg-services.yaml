@@ -22,16 +22,16 @@ spec:
     master: "true"
     cluster: "CLUSER_NAME_TO_REPLACE"
   #Add an external load balancer for write
-  type: LoadBalancer
-  loadBalancerSourceRanges:
-  - 162.246.45.4/32
-  - 50.204.222.32/27
-  - 111.93.155.240/28
-  - 203.145.181.112/28
-  - 52.1.124.126/32
-  - 50.0.116.61/32
-  - 194.74.103.192/28
-  - 50.242.80.16/29
+  # type: LoadBalancer
+  # loadBalancerSourceRanges:
+  # - 162.246.45.4/32
+  # - 50.204.222.32/27
+  # - 111.93.155.240/28
+  # - 203.145.181.112/28
+  # - 52.1.124.126/32
+  # - 50.0.116.61/32
+  # - 194.74.103.192/28
+  # - 50.242.80.16/29
 
 ---
 # A headless service to create DNS records for our read
@@ -56,14 +56,14 @@ spec:
     read: "true"
     cluster: "CLUSER_NAME_TO_REPLACE"
   #Add an external load balancer for read
-  type: LoadBalancer
-  loadBalancerSourceRanges:
-  - 162.246.45.4/32
-  - 50.204.222.32/27
-  - 111.93.155.240/28
-  - 203.145.181.112/28
-  - 52.1.124.126/32
-  - 50.0.116.61/32
-  - 194.74.103.192/28
-  - 50.242.80.16/29
+  # type: LoadBalancer
+  # loadBalancerSourceRanges:
+  # - 162.246.45.4/32
+  # - 50.204.222.32/27
+  # - 111.93.155.240/28
+  # - 203.145.181.112/28
+  # - 52.1.124.126/32
+  # - 50.0.116.61/32
+  # - 194.74.103.192/28
+  # - 50.242.80.16/29
 ---

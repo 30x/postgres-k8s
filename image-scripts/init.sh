@@ -14,7 +14,7 @@ function configure_master() {
 
 
   #TODO, we need to do an nslookup here
-  allowed_replicas="10.244.0.0/16"
+  allowed_replicas="0.0.0.0/0"
 
   echo "Configuring $PGDATA/pg_hba.conf for master"
   cat << EOF >> $PGDATA/pg_hba.conf

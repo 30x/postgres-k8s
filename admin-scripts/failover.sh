@@ -8,6 +8,33 @@
 
 #Exec into the first online slave and make it master
 
+
+function show_help(){
+  echo "Usage is $0 -f (optional, to force a new master when one is running.  Use with care) [cluster name]"
+}
+
+FORCE=false
+
+#Get the optoinal -d
+while getopts "hf" opt; do
+    case "$opt" in
+        h)
+            show_help
+            exit 0
+            ;;
+        d)  DELETE=1
+            ;;
+        f)  FORCE=true
+            ;;
+        '?')
+            show_help >&2
+            exit 1
+            ;;
+    esac
+done
+
+shift "$((OPTIND-1))" # Shift off the options and optional --.
+
 if [ "$1" == "" ]; then
   echo "You must specify a cluster name"
   exit 1
@@ -15,7 +42,7 @@ fi
 
 MASTER_POD=$(kubectl get po --no-headers -l "app=postgres,cluster=$1,master=true"|awk '{print $1}')
 
-if [ "$MASTER_POD" != "" ]; then
+if [[ "$MASTER_POD" != "" && $FORCE == false ]]; then
   echo "The master already appears running in pod $MASTER_POD. Short circuting"
   exit 1
 fi

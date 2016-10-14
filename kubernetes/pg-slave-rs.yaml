@@ -1,21 +1,3 @@
----
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: pg-data-CLUSER_NAME_TO_REPLACE-DISK_INDEX
-  annotations:
-    volume.beta.kubernetes.io/storage-class: postgresv1
-  labels:
-    app: postgres
-    cluster: "CLUSER_NAME_TO_REPLACE"
-    index: "DISK_INDEX"
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 100Gi
----
 apiVersion: extensions/v1beta1
 kind: ReplicaSet
 metadata:
@@ -61,7 +43,23 @@ spec:
       - name: pg-data-CLUSER_NAME_TO_REPLACE-DISK_INDEX
         persistentVolumeClaim:
           claimName: pg-data-CLUSER_NAME_TO_REPLACE-DISK_INDEX
-
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pg-data-CLUSER_NAME_TO_REPLACE-DISK_INDEX
+  annotations:
+    volume.beta.kubernetes.io/storage-class: postgresv1
+  labels:
+    app: postgres
+    cluster: "CLUSER_NAME_TO_REPLACE"
+    index: "DISK_INDEX"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
 
   # selector:
   #   matchLabels:

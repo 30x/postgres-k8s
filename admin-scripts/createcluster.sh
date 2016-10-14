@@ -10,7 +10,7 @@
 # Note that if the master persisatent volume is accidentally deleted, the failover script should be run to make a slave the master, then the slave will be re-created
 # ----
 
-if [ $1 == ""]; then
+if [ "$1" == "" ]; then
   echo "You must specify a cluster name"
   exit 1
 fi
