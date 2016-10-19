@@ -1,5 +1,6 @@
 # A headless service to create DNS records for our write
 # Note that CLUSER_NAME_TO_REPLACE  is meant to be replaced with template processing
+# A headless service to create DNS records for our read
 apiVersion: v1
 kind: Service
 metadata:
@@ -15,24 +16,23 @@ spec:
     targetPort: 5432
     name: postgres
   # *.edgexpostgres.default.svc.cluster.local
-  clusterIP: None
   selector:
     app: postgres
-    #An additive property.  This is just a flag that's added and removed to signal the master
     master: "true"
     cluster: "CLUSER_NAME_TO_REPLACE"
-  #Add an external load balancer for write
-  # type: LoadBalancer
-  # loadBalancerSourceRanges:
-  # - 162.246.45.4/32
-  # - 50.204.222.32/27
-  # - 111.93.155.240/28
-  # - 203.145.181.112/28
-  # - 52.1.124.126/32
-  # - 50.0.116.61/32
-  # - 194.74.103.192/28
-  # - 50.242.80.16/29
-
+  #Add an external load balancer for read
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+  - 162.246.44.8/32
+  - 50.204.222.32/27
+  - 111.93.155.240/28
+  - 203.145.181.112/28
+  - 52.1.124.126/32
+  - 50.0.116.61/32
+  - 194.74.103.192/28
+  - 50.242.80.16/29
+  - 67.6.206.65/32
+  - 54.200.58.80/32
 ---
 # A headless service to create DNS records for our read
 apiVersion: v1
@@ -50,20 +50,21 @@ spec:
     targetPort: 5432
     name: postgres
   # *.edgexpostgres.default.svc.cluster.local
-  clusterIP: None
   selector:
     app: postgres
     read: "true"
     cluster: "CLUSER_NAME_TO_REPLACE"
   #Add an external load balancer for read
-  # type: LoadBalancer
-  # loadBalancerSourceRanges:
-  # - 162.246.45.4/32
-  # - 50.204.222.32/27
-  # - 111.93.155.240/28
-  # - 203.145.181.112/28
-  # - 52.1.124.126/32
-  # - 50.0.116.61/32
-  # - 194.74.103.192/28
-  # - 50.242.80.16/29
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+  - 162.246.44.8/32
+  - 50.204.222.32/27
+  - 111.93.155.240/28
+  - 203.145.181.112/28
+  - 52.1.124.126/32
+  - 50.0.116.61/32
+  - 194.74.103.192/28
+  - 50.242.80.16/29
+  - 67.6.206.65/32
+  - 54.200.58.80/32
 ---
