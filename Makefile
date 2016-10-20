@@ -1,4 +1,4 @@
-IMAGE_VERSION=0.0.2-dev
+IMAGE_VERSION=0.0.3-dev
 
 build-and-push: build-postgres push-postgres-to-hub
 
