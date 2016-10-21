@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: JOBNAME
+spec:
+  template:
+    metadata:
+      name: JOBNAME
+    spec:
+      containers:
+      - name: pgbench
+        image: thirtyx/postgres-benchmark:0.0.3-dev
+        env:
+          - name: PG_USER
+            value: POSTGRES_USER_TO_REPLACE
+
+          - name: PG_PORT
+            value: "POSTGRES_PORT_TO_REPLACE"
+
+          - name: PG_HOST
+            value: POSTGRES_HOST_TO_REPLACE
+
+          - name: S3_BUCKET
+            value: S3_BUCKET_TO_REPLACE
+
+          - name: S3_REGION
+            value: S3_REGION_TO_REPLACE
+
+          - name: PG_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pgbenchmark
+                key: pgpassword
+
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: pgbenchmark
+                key: key
+
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: pgbenchmark
+                key: secret
+        imagePullPolicy: Always
+      restartPolicy: Never

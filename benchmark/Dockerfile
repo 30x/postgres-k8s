@@ -10,6 +10,4 @@ COPY pgbench /pgbench
 
 RUN chmod -R 755 /pgbench
 
-ENTRYPOINT [  ]
-
-CMD /bin/bash -c 'cd /pgbench && ./runtests.sh test'
+CMD /bin/bash -c 'cd /pgbench && ./runtests.sh'

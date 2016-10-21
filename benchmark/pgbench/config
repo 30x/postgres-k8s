@@ -41,8 +41,9 @@ MAX_WORKERS=""
 SCRIPT="select.sql"
 #SCALES="1 10 100 1000"
 SCALES="100"
-SETCLIENTS="1 2 4 8 16 32"
+SETCLIENTS="1 2 4 8 16 32 64 128"
 SETTIMES=3
+#SETTIMES=1
 
 # RUNTIME is in seconds.  If it is specified, then TOTTRANS is ignored.
 # Setting a time instead of a transaction account is only available

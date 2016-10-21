@@ -53,47 +53,29 @@ echo "Working directory is $workingdir"
 echo "Verifying you have S3 access to the bucket $S3_BUCKET in region $S3_REGION"
 
 
-OUTPUT=$(aws s3api head-bucket --region $S3_REGION --bucket $S3_BUCKET)
-# OUTPUT=$(aws s3api create-bucket --region $S3_REGION --bucket $S3_BUCKET)
+OUTPUT=$(aws s3api head-bucket --region $S3_REGION --bucket $S3_BUCKET 2>&1)
 
 if [ $? -ne 0 ]; then
-
-
-
-  denied=$(echo $OUTPUT|grep 403|wc -l)
-
-  resolved=false
-
-  #If we get 1 line of output, that's ok, we can
-  if [ $denied -eq 1 ]; then
-    echo "Unable to write data to S3.  Are you sure you have access to the bucket $S3_BUCKET in region $S3_REGION?. Error is"
-    echo $OUTPUT
-    exit 1
-  fi
 
   missing=$(echo $OUTPUT|grep 404|wc -l)
 
   if [ $missing -eq 1 ]; then
     echo "Bucket $S3_BUCKET does not exist in region $S3_REGION.  Creating"
-    OUTPUT=$(aws s3api create-bucket --region $S3_REGION --bucket $S3_BUCKET)
+    OUTPUT=$(aws s3api create-bucket --region $S3_REGION --bucket $S3_BUCKET 2>&1)
 
     if [ $? -ne 0 ]; then
       echo "Unable to create bucket"
       echo $OUTPUT
       exit 1
     fi
-
-    resolved=true
-  fi
-
-  if [ $resolved == false ]; then
+  else
     echo "An error occured when trying to setup the AWS bucket."
     echo $OUTPUT
     exit 1
   fi
 fi
 
-
+#Set our password so that any psql/pg client picks it up
 export PGPASSWORD=$PG_PASSWORD
 
 #Source the config file
@@ -123,8 +105,17 @@ echo "Copying results"
 
 
 #If we get here, we can access the bucket, send up the results
-TIME=($date +%s)
-NAME="$PG_HOST.results.$TIME.tar.gz"
-tar cvzf $NAME results
+TIME=$(date +%s)
+DIRNAME="$PG_HOST/$TIME"
+S3_NAME="$DIRNAME/results.tar.gz"
 
-aws s3api put-object --region $S3_REGION --bucket $S3_BUCKET --key $NAME --body $NAME
+#Tar up results
+tar cvzf results.tar.gz results
+
+aws s3api put-object --region $S3_REGION --bucket $S3_BUCKET --key $S3_NAME --body results.tar.gz
+
+echo "done" > done.txt
+
+S3_NAME="$DIRNAME/done.txt"
+
+aws s3api put-object --region $S3_REGION --bucket $S3_BUCKET --key $S3_NAME --body done.txt
