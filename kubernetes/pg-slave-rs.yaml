@@ -17,7 +17,7 @@ spec:
       terminationGracePeriodSeconds: 0
       containers:
       - name: postgres
-        image: thirtyx/postgres:0.0.2
+        image: thirtyx/postgres:0.0.3-dev
         env:
           - name: POSTGRES_PASSWORD
             value: password

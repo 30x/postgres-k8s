@@ -105,6 +105,11 @@ echo "Labeling the new pod as the master"
 
 kubectl label pods $POD master=true
 
+echo "Waiting for the service to normalize"
+
+#TODO, actually test the service
+sleep 30
+
 echo "Testing the new master.  If this takes longer than 30 seconds, the failover may not have worked.  Verify manually"
 #Add the label so that the write/replication service endpoint picks up the new service
 SUMRESULT=$(kubectl  exec $POD bash /clusterutils/testdb.sh | grep sum | grep 10 |wc -l)

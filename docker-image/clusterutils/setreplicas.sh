@@ -20,3 +20,6 @@ cp $PG_FILE $BACKUP_FILE
 
 #Overwrite PG with the new file and the new slaves
 sed -e "s/synchronous_standby_names.*/synchronous_standby_names='$NEW_SLAVES'/g"  $BACKUP_FILE > $PG_FILE
+
+#Set ownership of files
+chown -R postgres $PGDATA
