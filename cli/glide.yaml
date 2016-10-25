@@ -1,0 +1,7 @@
+package: github.com/30x/postgres-k8s/cli
+import:
+- package: github.com/spf13/cobra
+  vcs: git
+- package: k8s.io/client-go/1.4/kubernetes
+  version: 1.4
+  # vcs: git
