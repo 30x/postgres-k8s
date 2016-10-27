@@ -54,7 +54,7 @@ func init() {
 	// will be global for your application.
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.pgk8s.yaml)")
-	RootCmd.PersistentFlags().StringVar(&namespace, "namespace", "", "The namespace to use")
+	RootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "The namespace to use")
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")

@@ -2,3 +2,4 @@
 build
 kubernetes/kubernetes
 *.test
+debug

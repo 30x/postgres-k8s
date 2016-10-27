@@ -13,6 +13,7 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 	extv1beta1 "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	apiv1beta1 "k8s.io/client-go/pkg/apis/storage/v1beta1"
+	"k8s.io/client-go/pkg/util/intstr"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -170,7 +171,7 @@ func CreateStorageClass(storageClassName string) *apiv1beta1.StorageClass {
 }
 
 //CreateMaster create the master for the cluster
-func CreateMaster(clusterName string, slaveIds []string) *extv1beta1.ReplicaSet {
+func CreateMaster(clusterName string, replicaIDs []string) *extv1beta1.ReplicaSet {
 	/**
 	    apiVersion: extensions/v1beta1
 	kind: ReplicaSet
@@ -242,7 +243,7 @@ func CreateMaster(clusterName string, slaveIds []string) *extv1beta1.ReplicaSet 
 
 	var buffer bytes.Buffer
 
-	for i, inputError := range slaveIds {
+	for i, inputError := range replicaIDs {
 
 		if i > 0 {
 			buffer.WriteString(",")
@@ -263,6 +264,7 @@ func CreateMaster(clusterName string, slaveIds []string) *extv1beta1.ReplicaSet 
 
 }
 
+//CreateReplica create a replica
 func CreateReplica(clusterName string, index int) *extv1beta1.ReplicaSet {
 	/*	apiVersion: extensions/v1beta1
 		kind: ReplicaSet
@@ -313,7 +315,7 @@ func CreateReplica(clusterName string, index int) *extv1beta1.ReplicaSet {
 	*/
 	rs := createBaseReplicaSet(clusterName, index)
 
-	masterService := getMasterServiceName(clusterName)
+	masterService := getWriteServiceName(clusterName)
 
 	container := &rs.Spec.Template.Spec.Containers[0]
 
@@ -422,8 +424,6 @@ func createBaseReplicaSet(clusterName string, index int) *extv1beta1.ReplicaSet 
 		ReadOnly:  false,
 	}
 
-	fmt.Printf("%+v", pvcClaim)
-
 	//set up the volume
 	volume := v1.Volume{}
 	volume.Name = pvcName
@@ -447,6 +447,147 @@ func appendEnv(container *v1.Container, name, value string) {
 	container.Env = append(container.Env, envVar)
 }
 
+//CreateWriteService create a pvc with the information provided
+func CreateWriteService(clusterName string) *v1.Service {
+
+	//TODO, make the dns name and ips configurable
+	/*
+			  apiVersion: v1
+		kind: Service
+		metadata:
+		  name: postgres-CLUSER_NAME_TO_REPLACE-write
+		  labels:
+		    app: postgres
+		    type: write
+		    cluster: "CLUSER_NAME_TO_REPLACE"
+		spec:
+		  ports:
+		  - protocol: TCP
+		    port: 5432
+		    targetPort: 5432
+		    name: postgres
+		  # *.edgexpostgres.default.svc.cluster.local
+		  selector:
+		    app: postgres
+		    master: "true"
+		    cluster: "CLUSER_NAME_TO_REPLACE"
+		  #Add an external load balancer for read
+		  type: LoadBalancer
+		  loadBalancerSourceRanges:
+		  - 162.246.44.8/32
+		  - 50.204.222.32/27
+		  - 111.93.155.240/28
+		  - 203.145.181.112/28
+		  - 52.1.124.126/32
+		  - 50.0.116.61/32
+		  - 194.74.103.192/28
+		  - 50.242.80.16/29
+		  - 67.6.206.65/32
+		  - 54.200.58.80/32
+	*/
+
+	name := getWriteServiceName(clusterName)
+
+	svc := createBaseServiceDef(clusterName)
+
+	svc.Name = name
+	svc.ObjectMeta.Labels["type"] = "write"
+
+	svc.Spec.Selector["master"] = "true"
+
+	return svc
+}
+
+//CreateReadService create a pvc with the information provided
+func CreateReadService(clusterName string) *v1.Service {
+
+	/*
+			  apiVersion: v1
+		kind: Service
+		metadata:
+		  name: postgres-CLUSER_NAME_TO_REPLACE-read
+		  labels:
+		    app: postgres
+		    type: read
+		    cluster: "CLUSER_NAME_TO_REPLACE"
+		spec:
+		  ports:
+		  - protocol: TCP
+		    port: 5432
+		    targetPort: 5432
+		    name: postgres
+		  # *.edgexpostgres.default.svc.cluster.local
+		  selector:
+		    app: postgres
+		    read: "true"
+		    cluster: "CLUSER_NAME_TO_REPLACE"
+		  #Add an external load balancer for read
+		  type: LoadBalancer
+		  loadBalancerSourceRanges:
+		  - 162.246.44.8/32
+		  - 50.204.222.32/27
+		  - 111.93.155.240/28
+		  - 203.145.181.112/28
+		  - 52.1.124.126/32
+		  - 50.0.116.61/32
+		  - 194.74.103.192/28
+		  - 50.242.80.16/29
+		  - 67.6.206.65/32
+		  - 54.200.58.80/32
+		---
+
+	*/
+	name := getWriteServiceName(clusterName)
+
+	svc := createBaseServiceDef(clusterName)
+
+	svc.Name = name
+	svc.ObjectMeta.Labels["type"] = "read"
+
+	svc.Spec.Selector["read"] = "true"
+
+	return svc
+}
+
+func createBaseServiceDef(clusterName string) *v1.Service {
+
+	svc := &v1.Service{}
+
+	svc.ObjectMeta.Labels = make(map[string]string)
+	svc.ObjectMeta.Labels["app"] = "postgres"
+	svc.ObjectMeta.Labels["cluster"] = clusterName
+
+	svc.Spec.Ports = append(svc.Spec.Ports, v1.ServicePort{
+		Protocol: v1.ProtocolTCP,
+		Port:     5432,
+		TargetPort: intstr.IntOrString{
+			IntVal: 5432,
+		},
+		Name: "postgres",
+	})
+
+	svc.Spec.Selector = make(map[string]string)
+	svc.Spec.Selector["app"] = "postgres"
+	svc.Spec.Selector["cluster"] = clusterName
+
+	svc.Spec.Type = v1.ServiceTypeLoadBalancer
+
+	svc.Spec.LoadBalancerSourceRanges = []string{
+		"162.246.44.8/32",
+		"50.204.222.32/27",
+		"111.93.155.240/28",
+		"203.145.181.112/28",
+		"52.1.124.126/32",
+		"50.0.116.61/32",
+		"194.74.103.192/28",
+		"50.242.80.16/29",
+		"67.6.206.65/32",
+		"54.200.58.80/32",
+	}
+
+	return svc
+}
+
 func getQuantityInGigs(sizeInGigs int) resource.Quantity {
 	return resource.MustParse(fmt.Sprintf("%dGi", sizeInGigs))
 }
@@ -459,6 +600,6 @@ func getNodeName(clusterName string, index int) string {
 	return fmt.Sprintf("postgres-%s-%d", clusterName, index)
 }
 
-func getMasterServiceName(clusterName string) string {
+func getWriteServiceName(clusterName string) string {
 	return fmt.Sprintf("postgres-%s-write", clusterName)
 }
