@@ -72,7 +72,7 @@ You will now see both slaves are unable to connect to the master by using log --
 
 Pick a node to fail over to. After the execution of the kubectl you will notice the pod you have selected is the master, the service points to it, and replication is restored.  At this point, you should use the addreplica.sh script to scale out to return your cluster to 1 mater and synchrnous replicas.  You can verify the master is up and running by selecting the master pod.
 
-```
+    ```
 kubectl get po -l app=postgres,cluster=test,master=true
 ```
 

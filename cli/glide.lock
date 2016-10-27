@@ -68,4 +68,8 @@ imports:
   version: 3a5b96cfd3d3ff1d53d979b4297c4f3b869aab09
   subpackages:
   - 1.4/kubernetes
+- name: github.com/onsi/ginkgo
+  version: a8ccd817611666211fdf6e6a752174a0db8374a8
+- name: github.com/onsi/gomega
+  version: 7e2072f716a912a29b2dfa54398faf096a9909e3
 testImports: []

@@ -17,7 +17,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-const image = "thirtyx/postgres:0.0.3-dev"
+const Image = "thirtyx/postgres:0.0.3-dev"
 
 //CreateClientFromEnv create a k8s client from the current runtime.  Searches
 func CreateClientFromEnv() (*kubernetes.Clientset, error) {
@@ -124,11 +124,17 @@ func CreatePersistentVolumeClaim(clusterName, storageClass string, diskIndex, si
 	pvc := &v1.PersistentVolumeClaim{}
 
 	pvc.Name = name
+	pvc.Annotations = make(map[string]string)
 	pvc.Annotations["volume.beta.kubernetes.io/storage-class"] = storageClass
+
+	pvc.Labels = make(map[string]string)
 	pvc.Labels["app"] = "postgres"
 	pvc.Labels["cluster"] = clusterName
 	pvc.Labels["index"] = strconv.Itoa(diskIndex)
+
 	pvc.Spec.AccessModes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
+
+	pvc.Spec.Resources.Requests = make(v1.ResourceList)
 	pvc.Spec.Resources.Requests[v1.ResourceStorage] = size
 
 	return pvc
@@ -150,10 +156,11 @@ func CreateStorageClass(storageClassName string) *apiv1beta1.StorageClass {
 
 	storageClass := &apiv1beta1.StorageClass{}
 
-	storageClass.Name = "postgresv1"
+	storageClass.Name = storageClassName
 
 	storageClass.Provisioner = "kubernetes.io/aws-ebs"
 
+	storageClass.Parameters = make(map[string]string)
 	storageClass.Parameters["type"] = "gp2"
 
 	return storageClass
@@ -231,7 +238,7 @@ func CreateMaster(clusterName string, slaveIds []string) *extv1beta1.ReplicaSet 
 
 	rs.Spec.Template.Labels["master"] = "true"
 
-	container := rs.Spec.Template.Spec.Containers[0]
+	container := &rs.Spec.Template.Spec.Containers[0]
 
 	var buffer bytes.Buffer
 
@@ -248,9 +255,9 @@ func CreateMaster(clusterName string, slaveIds []string) *extv1beta1.ReplicaSet 
 	replicaString := buffer.String()
 
 	//append the master env vars
-	appendEnv(&container, "MEMBER_ROLE", "master")
-	appendEnv(&container, "SYNCHONROUS_REPLICAS", replicaString)
-	appendEnv(&container, "WAL_LEVEL", "logical")
+	appendEnv(container, "MEMBER_ROLE", "master")
+	appendEnv(container, "SYNCHONROUS_REPLICAS", replicaString)
+	appendEnv(container, "WAL_LEVEL", "logical")
 
 	return rs
 
@@ -304,18 +311,18 @@ func CreateReplica(clusterName string, index int) *extv1beta1.ReplicaSet {
 		          claimName: pg-data-CLUSER_NAME_TO_REPLACE-DISK_INDEX
 
 	*/
-	rs := createBaseReplicaSet(clusterName, 0)
+	rs := createBaseReplicaSet(clusterName, index)
 
 	masterService := getMasterServiceName(clusterName)
 
-	container := rs.Spec.Template.Spec.Containers[0]
+	container := &rs.Spec.Template.Spec.Containers[0]
 
 	replicaID := strconv.Itoa(index)
 
 	//append the master env vars
-	appendEnv(&container, "MEMBER_ROLE", "slave")
-	appendEnv(&container, "MASTER_ENDPOINT", masterService)
-	appendEnv(&container, "SYNCHONROUS_REPLICA", replicaID)
+	appendEnv(container, "MEMBER_ROLE", "slave")
+	appendEnv(container, "MASTER_ENDPOINT", masterService)
+	appendEnv(container, "SYNCHONROUS_REPLICA", replicaID)
 
 	return rs
 
@@ -376,25 +383,27 @@ func createBaseReplicaSet(clusterName string, index int) *extv1beta1.ReplicaSet 
 	replicas := int32(1)
 	rs.Spec.Replicas = &replicas
 
+	rs.Spec.Template.ObjectMeta.Labels = make(map[string]string)
+
 	labels := rs.Spec.Template.ObjectMeta.Labels
 	labels["app"] = "postgres"
 	labels["cluster"] = clusterName
 	labels["index"] = strconv.Itoa(index)
 
-	podSpec := rs.Spec.Template.Spec
+	//point the podspec
+	podSpec := &rs.Spec.Template.Spec
 
 	terminationGrace := int64(0)
 	podSpec.TerminationGracePeriodSeconds = &terminationGrace
 	podSpec.Containers = []v1.Container{v1.Container{}}
 
-	container := podSpec.Containers[0]
+	container := &podSpec.Containers[0]
 
 	container.Name = "postgres"
-	container.Image = image
-	appendEnv(&container, "POSTGRES_PASSOWRD", "password")
-	appendEnv(&container, "PGDATA", "/pgdata/data")
-	appendEnv(&container, "PGMOUNT", "/pgdata")
-	appendEnv(&container, "POSTGRES_PASSOWRD", "password")
+	container.Image = Image
+	appendEnv(container, "POSTGRES_PASSOWRD", "password")
+	appendEnv(container, "PGDATA", "/pgdata/data")
+	appendEnv(container, "PGMOUNT", "/pgdata")
 
 	container.Ports = append(container.Ports, v1.ContainerPort{
 		Name:          "postgres",

@@ -5,3 +5,5 @@ import:
 - package: k8s.io/client-go/1.4/kubernetes
   version: 1.4
   # vcs: git
+- package: github.com/onsi/ginkgo/ginkgo
+- package: github.com/onsi/gomega
