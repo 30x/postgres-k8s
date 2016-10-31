@@ -1,9 +1,15 @@
 package: github.com/30x/postgres-k8s/cli
 import:
-- package: github.com/spf13/cobra
-  vcs: git
-- package: k8s.io/client-go/1.4/kubernetes
-  version: 1.4
-  # vcs: git
-- package: github.com/onsi/ginkgo/ginkgo
+- package: golang.org/x/net
+  subpackages:
+  - lex
+- package: github.com/onsi/ginkgo
+  version: ^1.2.0
+  subpackages:
+  - ginkgo
 - package: github.com/onsi/gomega
+  version: ^1.0.0
+- package: k8s.io/kubernetes
+  version: v1.4.5
+  subpackages:
+  - pkg/client/unversioned/remotecommand
