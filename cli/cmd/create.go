@@ -23,13 +23,14 @@ import (
 
 	"strconv"
 
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/1.4/kubernetes"
+	"k8s.io/client-go/1.4/pkg/api"
+	"k8s.io/client-go/1.4/pkg/api/v1"
+	"k8s.io/client-go/1.4/pkg/labels"
 
 	"github.com/30x/postgres-k8s/cli/k8s"
 	"github.com/spf13/cobra"
-	extv1beta1 "k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	extv1beta1 "k8s.io/client-go/1.4/pkg/apis/extensions/v1beta1"
 )
 
 var clusterName string
@@ -209,11 +210,17 @@ func CreateCluster(clusterName, storageClassName string, numReplicas, diskSizeIn
 }
 
 func getMasterPod(client *kubernetes.Clientset, clusterName string) (*v1.Pod, error) {
-	selector := fmt.Sprintf("app=postgres,master=true,cluster=%s", clusterName)
+	selectorString := fmt.Sprintf("app=postgres,master=true,cluster=%s", clusterName)
 
 	//keep running until we expire
 
-	pods, err := client.Pods(namespace).List(v1.ListOptions{
+	selector, err := labels.Parse(selectorString)
+
+	if err != nil {
+		return nil, err
+	}
+
+	pods, err := client.Pods(namespace).List(api.ListOptions{
 		LabelSelector: selector,
 	})
 
@@ -258,7 +265,7 @@ func executeCommand(client *kubernetes.Clientset, pod *v1.Pod, command []string)
 		TTY:       true,
 	}, api.ParameterCodec)
 
-	remotecommand.NewExector
+	// remotecommand.NewExector
 
 	// func (*DefaultRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue term.TerminalSizeQueue) error {
 	// 	exec, err := remotecommand.NewExecutor(config, method, url)
@@ -299,13 +306,19 @@ func executeCommand(client *kubernetes.Clientset, pod *v1.Pod, command []string)
 //Wait for the number of pods to start.  Will wait the duration. If it fails, it will return an error.  If it succeeds, nil will be returned
 func waitForPodsToStart(client *kubernetes.Clientset, clusterName string, numNodes int, timeout time.Duration) error {
 
-	selector := fmt.Sprintf("app=postgres,cluster=%s", clusterName)
+	selectorString := fmt.Sprintf("app=postgres,cluster=%s", clusterName)
+
+	selector, err := labels.Parse(selectorString)
+
+	if err != nil {
+		return err
+	}
 
 	expiration := time.Now().Add(timeout)
 
 	//keep running until we expire
 	for time.Now().Before(expiration) {
-		pods, err := client.Pods(namespace).List(v1.ListOptions{
+		pods, err := client.Pods(namespace).List(api.ListOptions{
 			LabelSelector: selector,
 		})
 

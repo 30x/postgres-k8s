@@ -8,7 +8,7 @@ import (
 	"github.com/30x/postgres-k8s/cli/k8s"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/1.4/pkg/api/v1"
 )
 
 var _ = Describe("kubernetes", func() {
