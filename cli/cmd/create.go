@@ -19,10 +19,12 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"strconv"
 
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
 
 	"github.com/30x/postgres-k8s/cli/k8s"
@@ -40,23 +42,27 @@ var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a new cluster or restart a cluster with existing persistent volume claims.",
 	Long: `This will spin up a new cluster.  In the event no persistent volume claims, services, or replica sets exist, they will be created.
-	This command is intentionally idempotent, so it can be run multiple times, and any missing resource will be created.  If the Persistent Volume Claims
-	exist, such as after running delete without the -d parameters, existing cluster data and configuration will be used`,
+This command is intentionally idempotent, so it can be run multiple times, and any missing resource will be created.  If the Persistent Volume Claims
+exist, such as after running delete without the -d parameters, existing cluster data and configuration will be used`,
 
 	Run: func(cmd *cobra.Command, args []string) {
 
 		errors := &InputErrors{}
 
 		if clusterName == "" {
-			errors.Add("clusterName is a required parameter")
+			errors.Add("ERROR: clusterName is a required parameter")
 		}
 
 		if namespace == "" {
-			errors.Add("namespace is a required parameter")
+			errors.Add("ERROR: namespace is a required parameter")
 		}
 
 		if errors.HasErrors() {
+			fmt.Printf("\n")
 			fmt.Fprint(os.Stderr, errors.Error())
+			fmt.Printf("ERROR: Unable to execute command, see usage below\n\n")
+			cmd.Help()
+			// fmt.Println(cmd.Help HelpTemplate())
 			return
 		}
 
@@ -177,10 +183,156 @@ func CreateCluster(clusterName, storageClassName string, numReplicas, diskSizeIn
 		return err
 	}
 
+	numNodes := numReplicas + 1
+
 	//now check and validate service
 
-	return nil
+	log.Printf("Waiting up to 5 minutes for nodes to start")
 
+	err = waitForPodsToStart(client, clusterName, numNodes, 5*time.Minute)
+
+	//now execute our sql statement to ensure everything is running correctly
+	// client.
+
+	masterPod, err := getMasterPod(client, clusterName)
+
+	if err != nil {
+		return err
+	}
+
+	command := []string{"bash", "/clusterutils/testdb.sh"}
+
+	err = executeCommand(client, masterPod, command)
+
+	return err
+
+}
+
+func getMasterPod(client *kubernetes.Clientset, clusterName string) (*v1.Pod, error) {
+	selector := fmt.Sprintf("app=postgres,master=true,cluster=%s", clusterName)
+
+	//keep running until we expire
+
+	pods, err := client.Pods(namespace).List(v1.ListOptions{
+		LabelSelector: selector,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(pods.Items) != 1 {
+		return nil, fmt.Errorf("Could not find master node in cluster %s", clusterName)
+	}
+
+	return &pods.Items[0], nil
+}
+
+func executeCommand(client *kubernetes.Clientset, pod *v1.Pod, command []string) error {
+
+	if pod.Status.Phase != v1.PodRunning {
+		return fmt.Errorf("cannot exec into a container in a non running pod; current phase is %s", pod.Status.Phase)
+	}
+
+	if len(pod.Spec.Containers) > 1 {
+		return fmt.Errorf("Only 1 container per pod is supported")
+	}
+
+	containerName := pod.Spec.Containers[0].Name
+
+	restClient := client.CoreClient.GetRESTClient()
+
+	req := restClient.Post().
+		Resource("pods").
+		Name(pod.Name).
+		Namespace(pod.Namespace).
+		SubResource("exec").
+		Param("container", containerName)
+
+	req.VersionedParams(&api.PodExecOptions{
+		Container: containerName,
+		Command:   command,
+		Stdin:     false,
+		Stdout:    false,
+		Stderr:    false,
+		TTY:       true,
+	}, api.ParameterCodec)
+
+	remotecommand.NewExector
+
+	// func (*DefaultRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue term.TerminalSizeQueue) error {
+	// 	exec, err := remotecommand.NewExecutor(config, method, url)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	return exec.Stream(remotecommand.StreamOptions{
+	// 		SupportedProtocols: remotecommandserver.SupportedStreamingProtocols,
+	// 		Stdin:              stdin,
+	// 		Stdout:             stdout,
+	// 		Stderr:             stderr,
+	// 		Tty:                tty,
+	// 		TerminalSizeQueue:  terminalSizeQueue,
+	// 	})
+	// }
+
+	// return p.Executor.Execute("POST", req.URL(), p.Config, p.In, p.Out, p.Err, t.Raw, sizeQueue)
+
+	// ioStream, err := req.Stream()
+
+	// if err != nil {
+	// 	return err
+	// }
+
+	result := req.Do()
+
+	// if err != nil {
+	// 	return err
+	// }
+
+	return result.Error()
+	// io.Copy(os.Stdout, ioStream)
+
+	// return nil
+
+}
+
+//Wait for the number of pods to start.  Will wait the duration. If it fails, it will return an error.  If it succeeds, nil will be returned
+func waitForPodsToStart(client *kubernetes.Clientset, clusterName string, numNodes int, timeout time.Duration) error {
+
+	selector := fmt.Sprintf("app=postgres,cluster=%s", clusterName)
+
+	expiration := time.Now().Add(timeout)
+
+	//keep running until we expire
+	for time.Now().Before(expiration) {
+		pods, err := client.Pods(namespace).List(v1.ListOptions{
+			LabelSelector: selector,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		running := 0
+
+		for _, pod := range pods.Items {
+
+			if pod.Status.Phase == v1.PodRunning {
+				running++
+			}
+		}
+
+		log.Printf("%d pods running", running)
+
+		//we're done
+		if running == numNodes {
+			return nil
+		}
+
+		time.Sleep(5 * time.Second)
+	}
+
+	return fmt.Errorf("Unable to find %d pods in the cluster %s after %s", numNodes, clusterName, timeout)
 }
 
 //either returns the existing pvc, or creates a new one and returns the recreated resource

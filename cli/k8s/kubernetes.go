@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+//Image the image we're pulling. Eventually this should come from a var that's overwritten by the build process, or a local configuration yaml file.
 const Image = "thirtyx/postgres:0.0.3-dev"
 
 //CreateClientFromEnv create a k8s client from the current runtime.  Searches
@@ -32,7 +33,7 @@ func CreateClientFromEnv() (*kubernetes.Clientset, error) {
 	//log it
 	fmt.Println(err)
 
-	fmt.Printf("Falling back to in cluster configuration")
+	fmt.Printf("Unable to find user configuration.  Falling back to in cluster configuration")
 
 	return createInClusterConfig()
 }
