@@ -23,14 +23,12 @@ import (
 
 	"strconv"
 
-	"k8s.io/client-go/1.4/kubernetes"
-	"k8s.io/client-go/1.4/pkg/api"
-	"k8s.io/client-go/1.4/pkg/api/v1"
-	"k8s.io/client-go/1.4/pkg/labels"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api/v1"
 
 	"github.com/30x/postgres-k8s/cli/k8s"
 	"github.com/spf13/cobra"
-	extv1beta1 "k8s.io/client-go/1.4/pkg/apis/extensions/v1beta1"
+	extv1beta1 "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
 var clusterName string
@@ -195,44 +193,20 @@ func CreateCluster(clusterName, storageClassName string, numReplicas, diskSizeIn
 	//now execute our sql statement to ensure everything is running correctly
 	// client.
 
-	masterPod, err := getMasterPod(client, clusterName)
+	return nil
+	//TODO finish this with actual cluster validation
 
-	if err != nil {
-		return err
-	}
+	// masterPod, err := getMasterPod(client, clusterName)
 
-	command := []string{"bash", "/clusterutils/testdb.sh"}
+	// if err != nil {
+	// 	return err
+	// }
+	// command := []string{"bash", "/clusterutils/testdb.sh"}
 
-	err = executeCommand(client, masterPod, command)
+	// err = executeCommand(client, masterPod, command)
 
-	return err
+	// return err
 
-}
-
-func getMasterPod(client *kubernetes.Clientset, clusterName string) (*v1.Pod, error) {
-	selectorString := fmt.Sprintf("app=postgres,master=true,cluster=%s", clusterName)
-
-	//keep running until we expire
-
-	selector, err := labels.Parse(selectorString)
-
-	if err != nil {
-		return nil, err
-	}
-
-	pods, err := client.Pods(namespace).List(api.ListOptions{
-		LabelSelector: selector,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if len(pods.Items) != 1 {
-		return nil, fmt.Errorf("Could not find master node in cluster %s", clusterName)
-	}
-
-	return &pods.Items[0], nil
 }
 
 func executeCommand(client *kubernetes.Clientset, pod *v1.Pod, command []string) error {
@@ -245,25 +219,25 @@ func executeCommand(client *kubernetes.Clientset, pod *v1.Pod, command []string)
 		return fmt.Errorf("Only 1 container per pod is supported")
 	}
 
-	containerName := pod.Spec.Containers[0].Name
+	// containerName := pod.Spec.Containers[0].Name
 
-	restClient := client.CoreClient.GetRESTClient()
+	// restClient := client.CoreClient.GetRESTClient()
 
-	req := restClient.Post().
-		Resource("pods").
-		Name(pod.Name).
-		Namespace(pod.Namespace).
-		SubResource("exec").
-		Param("container", containerName)
+	// req := restClient.Post().
+	// 	Resource("pods").
+	// 	Name(pod.Name).
+	// 	Namespace(pod.Namespace).
+	// 	SubResource("exec").
+	// 	Param("container", containerName)
 
-	req.VersionedParams(&api.PodExecOptions{
-		Container: containerName,
-		Command:   command,
-		Stdin:     false,
-		Stdout:    false,
-		Stderr:    false,
-		TTY:       true,
-	}, api.ParameterCodec)
+	// req.VersionedParams(&api.PodExecOptions{
+	// 	Container: containerName,
+	// 	Command:   command,
+	// 	Stdin:     false,
+	// 	Stdout:    false,
+	// 	Stderr:    false,
+	// 	TTY:       true,
+	// }, api.ParameterCodec)
 
 	// remotecommand.NewExector
 
@@ -290,35 +264,29 @@ func executeCommand(client *kubernetes.Clientset, pod *v1.Pod, command []string)
 	// 	return err
 	// }
 
-	result := req.Do()
+	// result := req.Do()
 
 	// if err != nil {
 	// 	return err
 	// }
 
-	return result.Error()
+	// return result.Error()
 	// io.Copy(os.Stdout, ioStream)
 
-	// return nil
+	return nil
 
 }
 
 //Wait for the number of pods to start.  Will wait the duration. If it fails, it will return an error.  If it succeeds, nil will be returned
 func waitForPodsToStart(client *kubernetes.Clientset, clusterName string, numNodes int, timeout time.Duration) error {
 
-	selectorString := fmt.Sprintf("app=postgres,cluster=%s", clusterName)
-
-	selector, err := labels.Parse(selectorString)
-
-	if err != nil {
-		return err
-	}
+	selector := createClusterSelector(clusterName)
 
 	expiration := time.Now().Add(timeout)
 
 	//keep running until we expire
 	for time.Now().Before(expiration) {
-		pods, err := client.Pods(namespace).List(api.ListOptions{
+		pods, err := client.Pods(namespace).List(v1.ListOptions{
 			LabelSelector: selector,
 		})
 

@@ -16,37 +16,138 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api/v1"
+
+	"github.com/30x/postgres-k8s/cli/k8s"
 	"github.com/spf13/cobra"
 )
+
+var deletePvc bool
 
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Delete an existing cluster.",
+	Long: `This will delete an existing cluster.  If this command is run without the -d parameters, the cluster can be re-started via the create command using the same name.  
+If -d is specified all persistent disks will be removed.  Use this with care, you cannot recover from this operation`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
-		fmt.Println("delete called")
+		errors := &InputErrors{}
+
+		if clusterName == "" {
+			errors.Add("ERROR: clusterName is a required parameter")
+		}
+
+		if namespace == "" {
+			errors.Add("ERROR: namespace is a required parameter")
+		}
+
+		if errors.HasErrors() {
+			fmt.Printf("\n")
+			fmt.Fprint(os.Stderr, errors.Error())
+			fmt.Printf("ERROR: Unable to execute command, see usage below\n\n")
+			cmd.Help()
+			return
+		}
+
+		err := DeleteCluster(clusterName, namespace, deletePvc)
+
+		if err != nil {
+			fmt.Println(err)
+		}
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(deleteCmd)
 
-	// Here you will define your flags and configuration settings.
+	deleteCmd.Flags().StringVarP(&clusterName, "clusterName", "c", "", "The cluster name to create.")
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// deleteCmd.PersistentFlags().String("foo", "", "A help for foo")
+	deleteCmd.Flags().BoolVarP(&deletePvc, "deletePvc", "d", false, "Delete the Persistent Volume Claims.  Use with care, this will destroy your data")
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// deleteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
 
+//DeleteCluster delete the cluster
+func DeleteCluster(clusterName, namespace string, deletePVC bool) error {
+	client, err := k8s.CreateClientFromEnv()
+
+	if err != nil {
+		return err
+	}
+
+	err = deleteServices(client, clusterName, namespace)
+
+	if err != nil {
+		return err
+	}
+
+	err = deleteReplicaSets(client, clusterName, namespace)
+
+	if err != nil {
+		return err
+	}
+
+	err = deleteReplicaPods(client, clusterName, namespace)
+
+	if err != nil {
+		return err
+	}
+
+	if deletePVC {
+		err = deletePersistentVolumeClaims(client, clusterName, namespace)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+
+}
+
+func deletePersistentVolumeClaims(client *kubernetes.Clientset, clusterName, namespace string) error {
+
+	selector := createClusterSelector(clusterName)
+
+	err := client.PersistentVolumeClaims(namespace).DeleteCollection(&v1.DeleteOptions{}, v1.ListOptions{
+		LabelSelector: selector,
+	})
+
+	return err
+
+}
+
+func deleteReplicaSets(client *kubernetes.Clientset, clusterName, namespace string) error {
+
+	selector := createClusterSelector(clusterName)
+
+	err := client.ReplicaSets(namespace).DeleteCollection(&v1.DeleteOptions{}, v1.ListOptions{
+		LabelSelector: selector,
+	})
+
+	return err
+}
+
+func deleteReplicaPods(client *kubernetes.Clientset, clusterName, namespace string) error {
+
+	selector := createClusterSelector(clusterName)
+
+	err := client.Pods(namespace).DeleteCollection(&v1.DeleteOptions{}, v1.ListOptions{
+		LabelSelector: selector,
+	})
+
+	return err
+}
+
+func deleteServices(client *kubernetes.Clientset, clusterName, namespace string) error {
+
+	selector := createClusterSelector(clusterName)
+
+	err := client.Services(namespace).DeleteCollection(&v1.DeleteOptions{}, v1.ListOptions{
+		LabelSelector: selector,
+	})
+
+	return err
 }

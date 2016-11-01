@@ -16,7 +16,9 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/30x/postgres-k8s/cli/k8s"
 	"github.com/spf13/cobra"
 )
 
@@ -31,22 +33,75 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
-		fmt.Println("failover called")
+		errors := &InputErrors{}
+
+		if clusterName == "" {
+			errors.Add("ERROR: clusterName is a required parameter")
+		}
+
+		if namespace == "" {
+			errors.Add("ERROR: namespace is a required parameter")
+		}
+
+		if errors.HasErrors() {
+			fmt.Printf("\n")
+			fmt.Fprint(os.Stderr, errors.Error())
+			fmt.Printf("ERROR: Unable to execute command, see usage below\n\n")
+			cmd.Help()
+			return
+		}
+
+		err := DeleteCluster(clusterName, namespace, deletePvc)
+
+		if err != nil {
+			fmt.Println(err)
+		}
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(failoverCmd)
 
-	// Here you will define your flags and configuration settings.
+	failoverCmd.Flags().StringVarP(&clusterName, "clusterName", "c", "", "The cluster name to create.")
+}
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// failoverCmd.PersistentFlags().String("foo", "", "A help for foo")
+//Failover delete the cluster
+func Failover(clusterName, namespace string) error {
+	client, err := k8s.CreateClientFromEnv()
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// failoverCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	if err != nil {
+		return err
+	}
+
+	pod, err := getMasterPod(client, clusterName)
+
+	if pod != nil {
+		return fmt.Errorf("Master pod is already running")
+	}
+
+	if !isNotFoundError(err) {
+		return err
+	}
+
+	//it's not found, continue
+	replicas, err := getReplicaPods(client, clusterName)
+
+	if err != nil {
+		return err
+	}
+
+	if len(replicas) < 1 {
+		return fmt.Errorf("No replica pods could be found")
+	}
+
+	newMaster := replicas[0]
+
+	fmt.Printf("Selecting pod %s to become the new master", newMaster.Name)
+
+	//TODO exec the touch command
+
+	//add the
+
+	return nil
 
 }

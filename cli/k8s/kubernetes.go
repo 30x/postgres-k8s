@@ -8,14 +8,14 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"k8s.io/client-go/1.4/kubernetes"
-	"k8s.io/client-go/1.4/pkg/api/resource"
-	"k8s.io/client-go/1.4/pkg/api/v1"
-	extv1beta1 "k8s.io/client-go/1.4/pkg/apis/extensions/v1beta1"
-	apiv1beta1 "k8s.io/client-go/1.4/pkg/apis/storage/v1beta1"
-	"k8s.io/client-go/1.4/pkg/util/intstr"
-	"k8s.io/client-go/1.4/rest"
-	"k8s.io/client-go/1.4/tools/clientcmd"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api/resource"
+	"k8s.io/client-go/pkg/api/v1"
+	extv1beta1 "k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	apiv1beta1 "k8s.io/client-go/pkg/apis/storage/v1beta1"
+	"k8s.io/client-go/pkg/util/intstr"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 //Image the image we're pulling. Eventually this should come from a var that's overwritten by the build process, or a local configuration yaml file.
