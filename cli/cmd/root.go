@@ -23,7 +23,6 @@ import (
 )
 
 var cfgFile string
-var namespace string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -54,7 +53,6 @@ func init() {
 	// will be global for your application.
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.pgk8s.yaml)")
-	RootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "The namespace to use")
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")

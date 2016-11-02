@@ -25,7 +25,30 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var deletePvc bool
+var deleteArgs *DeleteArgs
+
+//DeleteArgs the args for the create command
+type DeleteArgs struct {
+	namespace   string
+	clusterName string
+	deletePvc   bool
+}
+
+func (args *DeleteArgs) validate() *InputErrors {
+
+	errors := &InputErrors{}
+
+	if args.clusterName == "" {
+		errors.Add("ERROR: clusterName is a required parameter")
+	}
+
+	if args.namespace == "" {
+		errors.Add("ERROR: namespace is a required parameter")
+	}
+
+	return errors
+
+}
 
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
@@ -34,15 +57,7 @@ var deleteCmd = &cobra.Command{
 	Long: `This will delete an existing cluster.  If this command is run without the -d parameters, the cluster can be re-started via the create command using the same name.  
 If -d is specified all persistent disks will be removed.  Use this with care, you cannot recover from this operation`,
 	Run: func(cmd *cobra.Command, args []string) {
-		errors := &InputErrors{}
-
-		if clusterName == "" {
-			errors.Add("ERROR: clusterName is a required parameter")
-		}
-
-		if namespace == "" {
-			errors.Add("ERROR: namespace is a required parameter")
-		}
+		errors := deleteArgs.validate()
 
 		if errors.HasErrors() {
 			fmt.Printf("\n")
@@ -52,7 +67,7 @@ If -d is specified all persistent disks will be removed.  Use this with care, yo
 			return
 		}
 
-		err := DeleteCluster(clusterName, namespace, deletePvc)
+		err := DeleteCluster(deleteArgs.namespace, deleteArgs.clusterName, deleteArgs.deletePvc)
 
 		if err != nil {
 			fmt.Println(err)
@@ -63,40 +78,43 @@ If -d is specified all persistent disks will be removed.  Use this with care, yo
 func init() {
 	RootCmd.AddCommand(deleteCmd)
 
-	deleteCmd.Flags().StringVarP(&clusterName, "clusterName", "c", "", "The cluster name to create.")
+	deleteArgs = &DeleteArgs{}
 
-	deleteCmd.Flags().BoolVarP(&deletePvc, "deletePvc", "d", false, "Delete the Persistent Volume Claims.  Use with care, this will destroy your data")
+	deleteCmd.Flags().StringVarP(&deleteArgs.namespace, "namespace", "n", "", "The namespace to use")
+	deleteCmd.Flags().StringVarP(&deleteArgs.clusterName, "clusterName", "c", "", "The cluster name to create.")
+
+	deleteCmd.Flags().BoolVarP(&deleteArgs.deletePvc, "deletePvc", "d", false, "Delete the Persistent Volume Claims.  Use with care, this will destroy your data")
 
 }
 
 //DeleteCluster delete the cluster
-func DeleteCluster(clusterName, namespace string, deletePVC bool) error {
+func DeleteCluster(namespace, clusterName string, deletePVC bool) error {
 	client, err := k8s.CreateClientFromEnv()
 
 	if err != nil {
 		return err
 	}
 
-	err = deleteServices(client, clusterName, namespace)
+	err = deleteServices(client, namespace, clusterName)
 
 	if err != nil {
 		return err
 	}
 
-	err = deleteReplicaSets(client, clusterName, namespace)
+	err = deleteReplicaSets(client, namespace, clusterName)
 
 	if err != nil {
 		return err
 	}
 
-	err = deleteReplicaPods(client, clusterName, namespace)
+	err = deleteReplicaPods(client, namespace, clusterName)
 
 	if err != nil {
 		return err
 	}
 
 	if deletePVC {
-		err = deletePersistentVolumeClaims(client, clusterName, namespace)
+		err = deletePersistentVolumeClaims(client, namespace, clusterName)
 
 		if err != nil {
 			return err
@@ -107,7 +125,7 @@ func DeleteCluster(clusterName, namespace string, deletePVC bool) error {
 
 }
 
-func deletePersistentVolumeClaims(client *kubernetes.Clientset, clusterName, namespace string) error {
+func deletePersistentVolumeClaims(client *kubernetes.Clientset, namespace, clusterName string) error {
 
 	selector := createClusterSelector(clusterName)
 
@@ -119,7 +137,7 @@ func deletePersistentVolumeClaims(client *kubernetes.Clientset, clusterName, nam
 
 }
 
-func deleteReplicaSets(client *kubernetes.Clientset, clusterName, namespace string) error {
+func deleteReplicaSets(client *kubernetes.Clientset, namespace, clusterName string) error {
 
 	selector := createClusterSelector(clusterName)
 
@@ -130,7 +148,7 @@ func deleteReplicaSets(client *kubernetes.Clientset, clusterName, namespace stri
 	return err
 }
 
-func deleteReplicaPods(client *kubernetes.Clientset, clusterName, namespace string) error {
+func deleteReplicaPods(client *kubernetes.Clientset, namespace, clusterName string) error {
 
 	selector := createClusterSelector(clusterName)
 
@@ -141,7 +159,7 @@ func deleteReplicaPods(client *kubernetes.Clientset, clusterName, namespace stri
 	return err
 }
 
-func deleteServices(client *kubernetes.Clientset, clusterName, namespace string) error {
+func deleteServices(client *kubernetes.Clientset, namespace, clusterName string) error {
 
 	selector := createClusterSelector(clusterName)
 

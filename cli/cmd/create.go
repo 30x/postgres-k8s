@@ -31,10 +31,32 @@ import (
 	extv1beta1 "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
-var clusterName string
-var storageClass string
-var numReplicas int
-var diskSizeInGigs int
+var createArgs *CreateArgs
+
+//CreateArgs the args for the create command
+type CreateArgs struct {
+	namespace      string
+	clusterName    string
+	storageClass   string
+	numReplicas    int
+	diskSizeInGigs int
+}
+
+func (args *CreateArgs) validate() *InputErrors {
+
+	errors := &InputErrors{}
+
+	if args.clusterName == "" {
+		errors.Add("ERROR: clusterName is a required parameter")
+	}
+
+	if args.namespace == "" {
+		errors.Add("ERROR: namespace is a required parameter")
+	}
+
+	return errors
+
+}
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
@@ -46,15 +68,7 @@ exist, such as after running delete without the -d parameters, existing cluster 
 
 	Run: func(cmd *cobra.Command, args []string) {
 
-		errors := &InputErrors{}
-
-		if clusterName == "" {
-			errors.Add("ERROR: clusterName is a required parameter")
-		}
-
-		if namespace == "" {
-			errors.Add("ERROR: namespace is a required parameter")
-		}
+		errors := createArgs.validate()
 
 		if errors.HasErrors() {
 			fmt.Printf("\n")
@@ -65,7 +79,7 @@ exist, such as after running delete without the -d parameters, existing cluster 
 			return
 		}
 
-		err := CreateCluster(clusterName, storageClass, numReplicas, diskSizeInGigs)
+		err := CreateCluster(createArgs.namespace, createArgs.clusterName, createArgs.storageClass, createArgs.numReplicas, createArgs.diskSizeInGigs)
 
 		if err != nil {
 			fmt.Fprint(os.Stderr, err.Error())
@@ -76,10 +90,14 @@ exist, such as after running delete without the -d parameters, existing cluster 
 func init() {
 	RootCmd.AddCommand(createCmd)
 
-	createCmd.Flags().StringVarP(&clusterName, "clusterName", "c", "", "The cluster name to create.")
-	createCmd.Flags().StringVarP(&storageClass, "storageClass", "s", "postgresv1", "The storage class to use when creating the cluster. Defaults to 'postgresv1'")
-	createCmd.Flags().IntVarP(&numReplicas, "replicas", "r", 2, "The number of replicas to create.  Defaults to 2.")
-	createCmd.Flags().IntVarP(&diskSizeInGigs, "diskSize", "d", 250, "The size of the EBS volume to allocate.  Defaults to 250 GB.  Unit is an int64")
+	createArgs = &CreateArgs{}
+
+	createCmd.Flags().StringVarP(&createArgs.namespace, "namespace", "n", "", "The namespace to use")
+
+	createCmd.Flags().StringVarP(&createArgs.clusterName, "clusterName", "c", "", "The cluster name to create.")
+	createCmd.Flags().StringVarP(&createArgs.storageClass, "storageClass", "s", "postgresv1", "The storage class to use when creating the cluster. Defaults to 'postgresv1'")
+	createCmd.Flags().IntVarP(&createArgs.numReplicas, "replicas", "r", 2, "The number of replicas to create.  Defaults to 2.")
+	createCmd.Flags().IntVarP(&createArgs.diskSizeInGigs, "diskSize", "d", 250, "The size of the EBS volume to allocate.  Defaults to 250 GB.  Unit is an int64")
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
@@ -93,7 +111,7 @@ func init() {
 }
 
 //CreateCluster Create a cluster and all of it's resources
-func CreateCluster(clusterName, storageClassName string, numReplicas, diskSizeInGigs int) error {
+func CreateCluster(namespace, clusterName, storageClassName string, numReplicas, diskSizeInGigs int) error {
 	client, err := k8s.CreateClientFromEnv()
 
 	if err != nil {
@@ -126,13 +144,13 @@ func CreateCluster(clusterName, storageClassName string, numReplicas, diskSizeIn
 	writeService := k8s.CreateWriteService(clusterName)
 	readService := k8s.CreateReadService(clusterName)
 
-	writeService, err = checkAndCreateService(client, writeService)
+	writeService, err = checkAndCreateService(client, namespace, writeService)
 
 	if err != nil {
 		return err
 	}
 
-	readService, err = checkAndCreateService(client, readService)
+	readService, err = checkAndCreateService(client, namespace, readService)
 
 	if err != nil {
 		return err
@@ -149,13 +167,13 @@ func CreateCluster(clusterName, storageClassName string, numReplicas, diskSizeIn
 		//now create the replica
 		rs := k8s.CreateReplica(clusterName, i)
 
-		pvc, err := checkAndCreatePVC(client, pvc)
+		pvc, err := checkAndCreatePVC(client, namespace, pvc)
 
 		if err != nil {
 			return err
 		}
 
-		rs, err = checkAndCreateReplicaSet(client, rs)
+		rs, err = checkAndCreateReplicaSet(client, namespace, rs)
 
 		if err != nil {
 			return err
@@ -170,13 +188,13 @@ func CreateCluster(clusterName, storageClassName string, numReplicas, diskSizeIn
 
 	masterRs := k8s.CreateMaster(clusterName, replicaIds)
 
-	masterPvc, err = checkAndCreatePVC(client, masterPvc)
+	masterPvc, err = checkAndCreatePVC(client, namespace, masterPvc)
 
 	if err != nil {
 		return err
 	}
 
-	masterRs, err = checkAndCreateReplicaSet(client, masterRs)
+	masterRs, err = checkAndCreateReplicaSet(client, namespace, masterRs)
 
 	if err != nil {
 		return err
@@ -188,7 +206,7 @@ func CreateCluster(clusterName, storageClassName string, numReplicas, diskSizeIn
 
 	log.Printf("Waiting up to 5 minutes for nodes to start")
 
-	err = waitForPodsToStart(client, clusterName, numNodes, 5*time.Minute)
+	err = waitForPodsToStart(client, namespace, clusterName, numNodes, 5*time.Minute)
 
 	//now execute our sql statement to ensure everything is running correctly
 	// client.
@@ -278,7 +296,7 @@ func executeCommand(client *kubernetes.Clientset, pod *v1.Pod, command []string)
 }
 
 //Wait for the number of pods to start.  Will wait the duration. If it fails, it will return an error.  If it succeeds, nil will be returned
-func waitForPodsToStart(client *kubernetes.Clientset, clusterName string, numNodes int, timeout time.Duration) error {
+func waitForPodsToStart(client *kubernetes.Clientset, namespace, clusterName string, numNodes int, timeout time.Duration) error {
 
 	selector := createClusterSelector(clusterName)
 
@@ -303,7 +321,7 @@ func waitForPodsToStart(client *kubernetes.Clientset, clusterName string, numNod
 			}
 		}
 
-		log.Printf("%d pods running", running)
+		log.Printf("%d pods running. Waiting for %d", running, (numNodes - running))
 
 		//we're done
 		if running == numNodes {
@@ -317,7 +335,7 @@ func waitForPodsToStart(client *kubernetes.Clientset, clusterName string, numNod
 }
 
 //either returns the existing pvc, or creates a new one and returns the recreated resource
-func checkAndCreatePVC(client *kubernetes.Clientset, pvc *v1.PersistentVolumeClaim) (*v1.PersistentVolumeClaim, error) {
+func checkAndCreatePVC(client *kubernetes.Clientset, namespace string, pvc *v1.PersistentVolumeClaim) (*v1.PersistentVolumeClaim, error) {
 	log.Printf("Checking for pvc %s", pvc.Name)
 	k8sPvc, err := client.PersistentVolumeClaims(namespace).Get(pvc.Name)
 
@@ -343,7 +361,7 @@ func checkAndCreatePVC(client *kubernetes.Clientset, pvc *v1.PersistentVolumeCla
 }
 
 //either returns the existing pvc, or creates a new one and returns the recreated resource
-func checkAndCreateService(client *kubernetes.Clientset, pvc *v1.Service) (*v1.Service, error) {
+func checkAndCreateService(client *kubernetes.Clientset, namespace string, pvc *v1.Service) (*v1.Service, error) {
 	log.Printf("Checking for service %s", pvc.Name)
 	k8sPvc, err := client.Services(namespace).Get(pvc.Name)
 
@@ -369,7 +387,7 @@ func checkAndCreateService(client *kubernetes.Clientset, pvc *v1.Service) (*v1.S
 }
 
 //either returns the existing pvc, or creates a new one and returns the recreated resource
-func checkAndCreateReplicaSet(client *kubernetes.Clientset, rs *extv1beta1.ReplicaSet) (*extv1beta1.ReplicaSet, error) {
+func checkAndCreateReplicaSet(client *kubernetes.Clientset, namespace string, rs *extv1beta1.ReplicaSet) (*extv1beta1.ReplicaSet, error) {
 	log.Printf("Checking for ReplicaSet %s", rs.Name)
 	k8sRS, err := client.ReplicaSets(namespace).Get(rs.Name)
 

@@ -13,7 +13,7 @@ func createClusterSelector(clusterName string) string {
 }
 
 //getMasterPod get the master pod of the cluster
-func getMasterPod(client *kubernetes.Clientset, clusterName string) (*v1.Pod, error) {
+func getMasterPod(client *kubernetes.Clientset, namespace, clusterName string) (*v1.Pod, error) {
 	selectorString := fmt.Sprintf("app=postgres,type=write,cluster=%s", clusterName)
 
 	pods, err := client.Pods(namespace).List(v1.ListOptions{
@@ -32,7 +32,7 @@ func getMasterPod(client *kubernetes.Clientset, clusterName string) (*v1.Pod, er
 }
 
 //getMasterPod get the master pod of the cluster
-func getReplicaPods(client *kubernetes.Clientset, clusterName string) ([]v1.Pod, error) {
+func getReplicaPods(client *kubernetes.Clientset, namespace, clusterName string) ([]v1.Pod, error) {
 	selectorString := fmt.Sprintf("app=postgres,type=read,cluster=%s", clusterName)
 
 	pods, err := client.Pods(namespace).List(v1.ListOptions{

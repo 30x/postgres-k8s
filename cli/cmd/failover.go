@@ -16,11 +16,36 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/30x/postgres-k8s/cli/k8s"
 	"github.com/spf13/cobra"
 )
+
+var failoverArgs *FailoverArgs
+
+//FailoverArgs the args for the create command
+type FailoverArgs struct {
+	namespace   string
+	clusterName string
+}
+
+func (args *FailoverArgs) validate() *InputErrors {
+
+	errors := &InputErrors{}
+
+	if args.clusterName == "" {
+		errors.Add("ERROR: clusterName is a required parameter")
+	}
+
+	if args.namespace == "" {
+		errors.Add("ERROR: namespace is a required parameter")
+	}
+
+	return errors
+
+}
 
 // failoverCmd represents the failover command
 var failoverCmd = &cobra.Command{
@@ -33,15 +58,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		errors := &InputErrors{}
-
-		if clusterName == "" {
-			errors.Add("ERROR: clusterName is a required parameter")
-		}
-
-		if namespace == "" {
-			errors.Add("ERROR: namespace is a required parameter")
-		}
+		errors := failoverArgs.validate()
 
 		if errors.HasErrors() {
 			fmt.Printf("\n")
@@ -51,7 +68,7 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		err := DeleteCluster(clusterName, namespace, deletePvc)
+		err := Failover(failoverArgs.namespace, failoverArgs.clusterName)
 
 		if err != nil {
 			fmt.Println(err)
@@ -62,20 +79,23 @@ to quickly create a Cobra application.`,
 func init() {
 	RootCmd.AddCommand(failoverCmd)
 
-	failoverCmd.Flags().StringVarP(&clusterName, "clusterName", "c", "", "The cluster name to create.")
+	failoverArgs := &FailoverArgs{}
+
+	failoverCmd.Flags().StringVarP(&failoverArgs.namespace, "namespace", "n", "", "The namespace to use")
+	failoverCmd.Flags().StringVarP(&failoverArgs.clusterName, "clusterName", "c", "", "The cluster name to create.")
 }
 
 //Failover delete the cluster
-func Failover(clusterName, namespace string) error {
+func Failover(namespace, clusterName string) error {
 	client, err := k8s.CreateClientFromEnv()
 
 	if err != nil {
 		return err
 	}
 
-	pod, err := getMasterPod(client, clusterName)
+	oldMasterPod, err := getMasterPod(client, namespace, clusterName)
 
-	if pod != nil {
+	if oldMasterPod != nil {
 		return fmt.Errorf("Master pod is already running")
 	}
 
@@ -84,7 +104,7 @@ func Failover(clusterName, namespace string) error {
 	}
 
 	//it's not found, continue
-	replicas, err := getReplicaPods(client, clusterName)
+	replicas, err := getReplicaPods(client, namespace, clusterName)
 
 	if err != nil {
 		return err
@@ -96,11 +116,16 @@ func Failover(clusterName, namespace string) error {
 
 	newMaster := replicas[0]
 
-	fmt.Printf("Selecting pod %s to become the new master", newMaster.Name)
+	newMaster.Labels["type"] = "write"
+	newMaster.Labels["master"] = "true"
 
-	//TODO exec the touch command
+	updatedMasterPod, err := client.Pods(namespace).Update(&newMaster)
 
-	//add the
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Updated pod %s with master labels", updatedMasterPod.Name)
 
 	return nil
 
