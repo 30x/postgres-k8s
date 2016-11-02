@@ -54,7 +54,7 @@ var _ = Describe("kubernetes", func() {
 
 		// sizeInGigs := 250
 
-		rs := k8s.CreateMaster(clusterName, slaveNames)
+		rs := k8s.CreateMaster(clusterName, slaveNames, 0)
 
 		expectedName := fmt.Sprintf("postgres-%s-%d", clusterName, 0)
 
@@ -62,6 +62,7 @@ var _ = Describe("kubernetes", func() {
 		Expect(rs.Spec.Template.Labels["app"]).Should(Equal("postgres"))
 		Expect(rs.Spec.Template.Labels["cluster"]).Should(Equal(clusterName))
 		Expect(rs.Spec.Template.Labels["index"]).Should(Equal("0"))
+		Expect(rs.Spec.Template.Labels["role"]).Should(Equal("master"))
 
 		container := &rs.Spec.Template.Spec.Containers[0]
 
@@ -111,6 +112,7 @@ var _ = Describe("kubernetes", func() {
 		Expect(rs.Spec.Template.Labels["app"]).Should(Equal("postgres"))
 		Expect(rs.Spec.Template.Labels["cluster"]).Should(Equal(clusterName))
 		Expect(rs.Spec.Template.Labels["index"]).Should(Equal(strconv.Itoa(index)))
+		Expect(rs.Spec.Template.Labels["role"]).Should(Equal("replica"))
 
 		container := &rs.Spec.Template.Spec.Containers[0]
 
@@ -147,5 +149,36 @@ var _ = Describe("kubernetes", func() {
 		Expect(container.Ports[0].Name).Should(Equal("postgres"))
 		Expect(container.Ports[0].ContainerPort).Should(Equal(int32(5432)))
 
+	})
+
+	It("Write Service", func() {
+		clusterName := "testCluster"
+
+		// sizeInGigs := 250
+
+		service := k8s.CreateWriteService(clusterName)
+
+		expectedName := fmt.Sprintf("postgres-%s-write", clusterName)
+
+		Expect(service.Name).Should(Equal(expectedName))
+
+		Expect(service.Spec.Selector["app"]).Should(Equal("postgres"))
+		Expect(service.Spec.Selector["role"]).Should(Equal("master"))
+		Expect(service.Spec.Selector["cluster"]).Should(Equal(clusterName))
+
+	})
+
+	It("Read Service", func() {
+		clusterName := "testCluster"
+
+		service := k8s.CreateReadService(clusterName)
+
+		expectedName := fmt.Sprintf("postgres-%s-read", clusterName)
+
+		Expect(service.Name).Should(Equal(expectedName))
+
+		Expect(service.Spec.Selector["app"]).Should(Equal("postgres"))
+		Expect(service.Spec.Selector["role"]).Should(Equal("replica"))
+		Expect(service.Spec.Selector["cluster"]).Should(Equal(clusterName))
 	})
 })

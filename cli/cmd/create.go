@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"strconv"
@@ -186,7 +185,7 @@ func CreateCluster(namespace, clusterName, storageClassName string, numReplicas,
 
 	masterPvc := k8s.CreatePersistentVolumeClaim(clusterName, storageClassName, 0, diskSizeInGigs)
 
-	masterRs := k8s.CreateMaster(clusterName, replicaIds)
+	masterRs := k8s.CreateMaster(clusterName, replicaIds, 0)
 
 	masterPvc, err = checkAndCreatePVC(client, namespace, masterPvc)
 
@@ -408,9 +407,4 @@ func checkAndCreateReplicaSet(client *kubernetes.Clientset, namespace string, rs
 
 	return k8sRS, nil
 
-}
-
-//isNotFoundError Returns true if the resource is not found on error
-func isNotFoundError(err error) bool {
-	return strings.Contains(err.Error(), "not found")
 }

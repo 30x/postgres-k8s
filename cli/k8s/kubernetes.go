@@ -172,7 +172,7 @@ func CreateStorageClass(storageClassName string) *apiv1beta1.StorageClass {
 }
 
 //CreateMaster create the master for the cluster
-func CreateMaster(clusterName string, replicaIDs []string) *extv1beta1.ReplicaSet {
+func CreateMaster(clusterName string, replicaIDs []string, index int) *extv1beta1.ReplicaSet {
 	/**
 	    apiVersion: extensions/v1beta1
 	kind: ReplicaSet
@@ -187,7 +187,6 @@ func CreateMaster(clusterName string, replicaIDs []string) *extv1beta1.ReplicaSe
 	        app: postgres
 	        role: master
 	        cluster: "CLUSER_NAME_TO_REPLACE"
-	        master: "true"
 	        index: "DISK_INDEX"
 	    spec:
 	      terminationGracePeriodSeconds: 0
@@ -236,9 +235,9 @@ func CreateMaster(clusterName string, replicaIDs []string) *extv1beta1.ReplicaSe
 	    requests:
 	      storage: 100Gi
 	      **/
-	rs := createBaseReplicaSet(clusterName, 0)
+	rs := createBaseReplicaSet(clusterName, index)
 
-	rs.Spec.Template.Labels["master"] = "true"
+	rs.Spec.Template.Labels["role"] = "master"
 
 	container := &rs.Spec.Template.Spec.Containers[0]
 
@@ -278,9 +277,8 @@ func CreateReplica(clusterName string, index int) *extv1beta1.ReplicaSet {
 		    metadata:
 		      labels:
 		        app: postgres
-		        role: slave
+		        role: replica
 		        cluster: "CLUSER_NAME_TO_REPLACE"
-		        read: "true"
 		        index: "DISK_INDEX"
 		    spec:
 		      terminationGracePeriodSeconds: 0
@@ -315,6 +313,8 @@ func CreateReplica(clusterName string, index int) *extv1beta1.ReplicaSet {
 
 	*/
 	rs := createBaseReplicaSet(clusterName, index)
+
+	rs.Spec.Template.Labels["role"] = "replica"
 
 	masterService := getWriteServiceName(clusterName)
 
@@ -470,7 +470,7 @@ func CreateWriteService(clusterName string) *v1.Service {
 		  # *.edgexpostgres.default.svc.cluster.local
 		  selector:
 		    app: postgres
-		    master: "true"
+		    role: master
 		    cluster: "CLUSER_NAME_TO_REPLACE"
 		  #Add an external load balancer for read
 		  type: LoadBalancer
@@ -494,7 +494,7 @@ func CreateWriteService(clusterName string) *v1.Service {
 	svc.Name = name
 	svc.ObjectMeta.Labels["type"] = "write"
 
-	svc.Spec.Selector["master"] = "true"
+	svc.Spec.Selector["role"] = "master"
 
 	return svc
 }
@@ -520,7 +520,7 @@ func CreateReadService(clusterName string) *v1.Service {
 		  # *.edgexpostgres.default.svc.cluster.local
 		  selector:
 		    app: postgres
-		    read: "true"
+		    role: replica
 		    cluster: "CLUSER_NAME_TO_REPLACE"
 		  #Add an external load balancer for read
 		  type: LoadBalancer
@@ -538,14 +538,14 @@ func CreateReadService(clusterName string) *v1.Service {
 		---
 
 	*/
-	name := getWriteServiceName(clusterName)
+	name := getReadServiceName(clusterName)
 
 	svc := createBaseServiceDef(clusterName)
 
 	svc.Name = name
 	svc.ObjectMeta.Labels["type"] = "read"
 
-	svc.Spec.Selector["read"] = "true"
+	svc.Spec.Selector["role"] = "replica"
 
 	return svc
 }
@@ -603,4 +603,8 @@ func getNodeName(clusterName string, index int) string {
 
 func getWriteServiceName(clusterName string) string {
 	return fmt.Sprintf("postgres-%s-write", clusterName)
+}
+
+func getReadServiceName(clusterName string) string {
+	return fmt.Sprintf("postgres-%s-read", clusterName)
 }

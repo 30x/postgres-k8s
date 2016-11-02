@@ -127,6 +127,7 @@ func DeleteCluster(namespace, clusterName string, deletePVC bool) error {
 
 func deletePersistentVolumeClaims(client *kubernetes.Clientset, namespace, clusterName string) error {
 
+	fmt.Println("Deleting persistent volume claims")
 	selector := createClusterSelector(clusterName)
 
 	err := client.PersistentVolumeClaims(namespace).DeleteCollection(&v1.DeleteOptions{}, v1.ListOptions{
@@ -139,6 +140,8 @@ func deletePersistentVolumeClaims(client *kubernetes.Clientset, namespace, clust
 
 func deleteReplicaSets(client *kubernetes.Clientset, namespace, clusterName string) error {
 
+	fmt.Println("Deleting Replica Sets")
+
 	selector := createClusterSelector(clusterName)
 
 	err := client.ReplicaSets(namespace).DeleteCollection(&v1.DeleteOptions{}, v1.ListOptions{
@@ -149,6 +152,8 @@ func deleteReplicaSets(client *kubernetes.Clientset, namespace, clusterName stri
 }
 
 func deleteReplicaPods(client *kubernetes.Clientset, namespace, clusterName string) error {
+
+	fmt.Println("Deleting Replica Pods")
 
 	selector := createClusterSelector(clusterName)
 
@@ -161,11 +166,21 @@ func deleteReplicaPods(client *kubernetes.Clientset, namespace, clusterName stri
 
 func deleteServices(client *kubernetes.Clientset, namespace, clusterName string) error {
 
+	fmt.Println("Deleting Services")
+
 	selector := createClusterSelector(clusterName)
 
-	err := client.Services(namespace).DeleteCollection(&v1.DeleteOptions{}, v1.ListOptions{
+	services, err := client.Services(namespace).List(v1.ListOptions{
 		LabelSelector: selector,
 	})
+
+	for _, service := range services.Items {
+		err := client.Services(namespace).Delete(service.Name, nil)
+
+		if err != nil {
+			return err
+		}
+	}
 
 	return err
 }

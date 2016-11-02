@@ -29,6 +29,7 @@ var failoverArgs *FailoverArgs
 type FailoverArgs struct {
 	namespace   string
 	clusterName string
+	force       bool
 }
 
 func (args *FailoverArgs) validate() *InputErrors {
@@ -68,7 +69,7 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		err := Failover(failoverArgs.namespace, failoverArgs.clusterName)
+		err := Failover(failoverArgs.namespace, failoverArgs.clusterName, failoverArgs.force)
 
 		if err != nil {
 			fmt.Println(err)
@@ -79,14 +80,15 @@ to quickly create a Cobra application.`,
 func init() {
 	RootCmd.AddCommand(failoverCmd)
 
-	failoverArgs := &FailoverArgs{}
+	failoverArgs = &FailoverArgs{}
 
 	failoverCmd.Flags().StringVarP(&failoverArgs.namespace, "namespace", "n", "", "The namespace to use")
 	failoverCmd.Flags().StringVarP(&failoverArgs.clusterName, "clusterName", "c", "", "The cluster name to create.")
+	failoverCmd.Flags().BoolVarP(&failoverArgs.force, "force", "f", false, "Force the failover, even if a master is detected")
 }
 
 //Failover delete the cluster
-func Failover(namespace, clusterName string) error {
+func Failover(namespace, clusterName string, force bool) error {
 	client, err := k8s.CreateClientFromEnv()
 
 	if err != nil {
@@ -95,12 +97,12 @@ func Failover(namespace, clusterName string) error {
 
 	oldMasterPod, err := getMasterPod(client, namespace, clusterName)
 
-	if oldMasterPod != nil {
-		return fmt.Errorf("Master pod is already running")
+	if err != nil && !isNotFoundError(err) {
+		return err
 	}
 
-	if !isNotFoundError(err) {
-		return err
+	if oldMasterPod != nil && !force {
+		return fmt.Errorf("Master pod is already running.  If you want to failover, you must specify the force flag.")
 	}
 
 	//it's not found, continue
@@ -116,16 +118,46 @@ func Failover(namespace, clusterName string) error {
 
 	newMaster := replicas[0]
 
-	newMaster.Labels["type"] = "write"
-	newMaster.Labels["master"] = "true"
+	newMaster.Labels["role"] = "master"
 
-	updatedMasterPod, err := client.Pods(namespace).Update(&newMaster)
+	//patch the master with the labels
+
+	// updatedMasterPod, err := client.Pods(namespace).Patch()
+
+	// if err != nil {
+	// 	return err
+	// }
+
+	//TODO update the replica set in case the pod dies
+
+	// k8s.CreateMaster(clusterName, rep)
+
+	ownerRefs := newMaster.OwnerReferences
+
+	if len(ownerRefs) != 1 {
+		return fmt.Errorf("Expected the pod %s to only have 1 owner.  Short circuiting", newMaster.Name)
+	}
+
+	// kind := ownerRefs[0].Kind
+	name := ownerRefs[0].Name
+
+	rs, err := client.ReplicaSets(namespace).Get(name)
 
 	if err != nil {
 		return err
 	}
 
-	log.Printf("Updated pod %s with master labels", updatedMasterPod.Name)
+	rs.Spec.Template.Labels["role"] = "master"
+
+	updatedRS, err := client.ReplicaSets(namespace).Update(rs)
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Updated Replica Set %s with new master labels", updatedRS.Name)
+
+	// log.Printf("Updated pod %s with master labels", updatedMasterPod.Name)
 
 	return nil
 
