@@ -239,6 +239,9 @@ func CreateMaster(clusterName string, replicaIDs []string, index int) *extv1beta
 
 	rs.Spec.Template.Labels["role"] = "master"
 
+	//While redundant, this is our additive label that will signal to the service which pod is the write master.  This is needed for the failover case
+	rs.Spec.Template.Labels["master"] = "true"
+
 	container := &rs.Spec.Template.Spec.Containers[0]
 
 	var buffer bytes.Buffer
@@ -494,7 +497,7 @@ func CreateWriteService(clusterName string) *v1.Service {
 	svc.Name = name
 	svc.ObjectMeta.Labels["type"] = "write"
 
-	svc.Spec.Selector["role"] = "master"
+	svc.Spec.Selector["master"] = "true"
 
 	return svc
 }

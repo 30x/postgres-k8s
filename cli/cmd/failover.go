@@ -118,8 +118,6 @@ func Failover(namespace, clusterName string, force bool) error {
 
 	newMaster := replicas[0]
 
-	newMaster.Labels["role"] = "master"
-
 	//patch the master with the labels
 
 	// updatedMasterPod, err := client.Pods(namespace).Patch()
@@ -147,7 +145,7 @@ func Failover(namespace, clusterName string, force bool) error {
 		return err
 	}
 
-	rs.Spec.Template.Labels["role"] = "master"
+	rs.Spec.Template.Labels["master"] = "true"
 
 	updatedRS, err := client.ReplicaSets(namespace).Update(rs)
 
@@ -157,7 +155,17 @@ func Failover(namespace, clusterName string, force bool) error {
 
 	log.Printf("Updated Replica Set %s with new master labels", updatedRS.Name)
 
-	// log.Printf("Updated pod %s with master labels", updatedMasterPod.Name)
+	//now update the master
+
+	newMaster.Labels["master"] = "true"
+
+	updatedPod, err := client.Pods(namespace).Update(&newMaster)
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Updated pod %s with master labels", updatedPod.Name)
 
 	return nil
 

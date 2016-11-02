@@ -63,6 +63,7 @@ var _ = Describe("kubernetes", func() {
 		Expect(rs.Spec.Template.Labels["cluster"]).Should(Equal(clusterName))
 		Expect(rs.Spec.Template.Labels["index"]).Should(Equal("0"))
 		Expect(rs.Spec.Template.Labels["role"]).Should(Equal("master"))
+		Expect(rs.Spec.Template.Labels["master"]).Should(Equal("true"))
 
 		container := &rs.Spec.Template.Spec.Containers[0]
 
@@ -163,7 +164,7 @@ var _ = Describe("kubernetes", func() {
 		Expect(service.Name).Should(Equal(expectedName))
 
 		Expect(service.Spec.Selector["app"]).Should(Equal("postgres"))
-		Expect(service.Spec.Selector["role"]).Should(Equal("master"))
+		Expect(service.Spec.Selector["master"]).Should(Equal("true"))
 		Expect(service.Spec.Selector["cluster"]).Should(Equal(clusterName))
 
 	})
