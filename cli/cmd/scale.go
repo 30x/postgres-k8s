@@ -29,9 +29,11 @@ var scaleArgs *ScaleArgs
 
 //ScaleArgs the args for the create command
 type ScaleArgs struct {
-	namespace   string
-	clusterName string
-	numReplicas int
+	namespace      string
+	clusterName    string
+	numReplicas    int
+	storageClass   string
+	diskSizeInGigs int
 }
 
 func (args *ScaleArgs) validate() *InputErrors {
@@ -72,7 +74,7 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		err := AddReplicas(scaleArgs.namespace, scaleArgs.clusterName, scaleArgs.numReplicas)
+		err := AddReplicas(scaleArgs.namespace, scaleArgs.clusterName, scaleArgs.storageClass, scaleArgs.numReplicas, scaleArgs.diskSizeInGigs)
 
 		if err != nil {
 			fmt.Println(err)
@@ -83,16 +85,18 @@ to quickly create a Cobra application.`,
 func init() {
 	RootCmd.AddCommand(scaleCmd)
 
-	scaleArgs := &ScaleArgs{}
+	scaleArgs = &ScaleArgs{}
 
 	scaleCmd.Flags().StringVarP(&scaleArgs.namespace, "namespace", "n", "", "The namespace to use")
 	scaleCmd.Flags().StringVarP(&scaleArgs.clusterName, "clusterName", "c", "", "The cluster name to create.")
 	scaleCmd.Flags().IntVarP(&scaleArgs.numReplicas, "replicas", "r", 1, "The number of replicas to create.  Defaults to 1.")
+	scaleCmd.Flags().StringVarP(&scaleArgs.storageClass, "storageClass", "s", "postgresv1", "The storage class to use when creating the cluster. Defaults to 'postgresv1'")
+	scaleCmd.Flags().IntVarP(&scaleArgs.diskSizeInGigs, "diskSize", "d", 250, "The size of the EBS volume to allocate.  Defaults to 250 GB.  Unit is an int64")
 
 }
 
 //AddReplicas add the number of replicas to the cluster in the given namespace
-func AddReplicas(namespace, clusterName string, numReplicas int) error {
+func AddReplicas(namespace, clusterName, storageClass string, numReplicas, sidkSizeInGigs int) error {
 	client, err := k8s.CreateClientFromEnv()
 
 	if err != nil {
@@ -105,7 +109,7 @@ func AddReplicas(namespace, clusterName string, numReplicas int) error {
 		return err
 	}
 
-	maxIndex := 0
+	startIndex := 0
 
 	for _, pod := range replicas {
 
@@ -115,8 +119,8 @@ func AddReplicas(namespace, clusterName string, numReplicas int) error {
 			return err
 		}
 
-		if maxIndex < index {
-			maxIndex = index
+		if startIndex < index {
+			startIndex = index
 		}
 	}
 
@@ -128,23 +132,32 @@ func AddReplicas(namespace, clusterName string, numReplicas int) error {
 		return err
 	}
 
-	if maxIndex < index {
-		maxIndex = index
+	if startIndex < index {
+		startIndex = index
 	}
 
-	maxIndex++
+	startIndex++
 
-	// now we have a max index, create another replica
-	fmt.Printf("Creating a new replica at index %d", maxIndex)
+	endIndex := startIndex + numReplicas
 
-	replica := k8s.CreateReplica(clusterName, maxIndex)
-	rs, err := checkAndCreateReplicaSet(client, namespace, replica)
+	for i := startIndex; i < endIndex; i++ {
+		newClaim := k8s.CreatePersistentVolumeClaim(clusterName, storageClass, i, sidkSizeInGigs)
 
-	if err != nil {
-		return err
+		_, err = checkAndCreatePVC(client, namespace, newClaim)
+
+		if err != nil {
+			return err
+		}
+
+		replica := k8s.CreateReplica(clusterName, i)
+
+		_, err = checkAndCreateReplicaSet(client, namespace, replica)
+
+		if err != nil {
+			return err
+		}
+
 	}
-
-	fmt.Printf("Created new replica set with name %s", rs.Name)
 
 	return nil
 

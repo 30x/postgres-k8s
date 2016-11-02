@@ -15,7 +15,7 @@ func createClusterSelector(clusterName string) string {
 
 //getMasterPod get the master pod of the cluster
 func getMasterPod(client *kubernetes.Clientset, namespace, clusterName string) (*v1.Pod, error) {
-	selectorString := fmt.Sprintf("app=postgres,role=master,cluster=%s", clusterName)
+	selectorString := fmt.Sprintf("app=postgres,master=true,cluster=%s", clusterName)
 
 	pods, err := client.Pods(namespace).List(v1.ListOptions{
 		LabelSelector: selectorString,
