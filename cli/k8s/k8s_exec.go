@@ -3,8 +3,7 @@ package k8s
 import (
 	"bytes"
 	"io"
-
-	"io/ioutil"
+	"log"
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/restclient"
@@ -82,22 +81,30 @@ func ExecCommand(namespace, podName, containerName string, commands []string) (i
 
 	stdin := &bytes.Buffer{}
 
-	stdout := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
+	// stdout := &bytes.Buffer{}
+	// stderr := &bytes.Buffer{}
+
+	stdoutReader, stdoutWriter := io.Pipe()
+	stderrReader, stderrWriter := io.Pipe()
+
 	//todo, not sure we need this
 
 	// io.WriteCloser
 
+	log.Printf("About to execute remote stream")
+
 	err = exec.Stream(remotecommand.StreamOptions{
 		SupportedProtocols: remotecommandserver.SupportedStreamingProtocols,
 		Stdin:              stdin,
-		Stdout:             stdout,
-		Stderr:             stderr,
+		Stdout:             stdoutWriter,
+		Stderr:             stderrWriter,
 		Tty:                false,
 		TerminalSizeQueue:  nil,
 	})
 
-	return ioutil.NopCloser(stdout), ioutil.NopCloser(stderr), err
+	log.Printf("Remote stream in progress")
+
+	return stdoutReader, stderrReader, err
 
 	// rmtCmd, err := remote.NewExecutor(restConf, "POST", req.URL())
 

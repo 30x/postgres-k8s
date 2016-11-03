@@ -1,11 +1,15 @@
-hash: c8270fed46bd11aacfaf776ab998eeac096bb6c30fba9a185159ead61820bf3b
-updated: 2016-11-03T10:17:04.714822309-06:00
+hash: a2faf7c596bf79606672c9d09083c3827337a4fd7afbcc1c46595bc633a580b4
+updated: 2016-11-03T13:23:18.930430372-06:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
   subpackages:
   - compute/metadata
   - internal
+- name: github.com/Azure/go-ansiterm
+  version: 70b2c90b260171e829f1ebd7c17f600c11858dbe
+  subpackages:
+  - winterm
 - name: github.com/blang/semver
   version: 31b736133b98f26d5e078ec9eb591666edfd091f
 - name: github.com/coreos/go-oidc
@@ -42,6 +46,24 @@ imports:
   subpackages:
   - digest
   - reference
+- name: github.com/docker/docker
+  version: b9f10c951893f9a00865890a5232e85d770c1087
+  subpackages:
+  - pkg/jsonlog
+  - pkg/jsonmessage
+  - pkg/longpath
+  - pkg/mount
+  - pkg/stdcopy
+  - pkg/symlink
+  - pkg/system
+  - pkg/term
+  - pkg/term/windows
+- name: github.com/docker/go-units
+  version: 0bbddae09c5a5419a8c6dcdd7ff90da3d450393b
+- name: github.com/docker/spdystream
+  version: 449fdfce4d962303d702fec724ef0ad181c92528
+  subpackages:
+  - spdy
 - name: github.com/emicklei/go-restful
   version: 89ef8af493ab468a45a42bb0d89a06fccdd2fb22
   subpackages:
@@ -175,6 +197,8 @@ imports:
   version: 248dadf4e9068a0b3e79f02ed0a610d935de5302
 - name: github.com/pkg/sftp
   version: 4d0e916071f68db74f8a73926335f809396d6b42
+- name: github.com/Sirupsen/logrus
+  version: 51fe59aca108dc5680109e7b2051cbdcfa5a253c
 - name: github.com/spf13/afero
   version: 52e4a6cfac46163658bd4f123c49b6ee7dc75f78
   subpackages:
@@ -212,6 +236,7 @@ imports:
   - http2/hpack
   - lex
   - lex/httplex
+  - websocket
 - name: golang.org/x/oauth2
   version: 3c3a985cb79f52a3190fbc056984415ca6763d01
   subpackages:
@@ -422,6 +447,7 @@ imports:
   - pkg/apis/storage/v1beta1
   - pkg/auth/user
   - pkg/capabilities
+  - pkg/client
   - pkg/client/metrics
   - pkg/client/restclient
   - pkg/client/transport
@@ -436,7 +462,9 @@ imports:
   - pkg/conversion
   - pkg/conversion/queryparams
   - pkg/fields
+  - pkg/httplog
   - pkg/kubelet/qos
+  - pkg/kubelet/server/remotecommand
   - pkg/kubelet/types
   - pkg/labels
   - pkg/master/ports
@@ -455,11 +483,15 @@ imports:
   - pkg/util/config
   - pkg/util/crypto
   - pkg/util/errors
+  - pkg/util/exec
   - pkg/util/flowcontrol
   - pkg/util/framer
   - pkg/util/hash
   - pkg/util/homedir
+  - pkg/util/httpstream
+  - pkg/util/httpstream/spdy
   - pkg/util/integer
+  - pkg/util/interrupt
   - pkg/util/intstr
   - pkg/util/json
   - pkg/util/labels
@@ -469,10 +501,12 @@ imports:
   - pkg/util/rand
   - pkg/util/runtime
   - pkg/util/sets
+  - pkg/util/term
   - pkg/util/uuid
   - pkg/util/validation
   - pkg/util/validation/field
   - pkg/util/wait
+  - pkg/util/wsstream
   - pkg/util/yaml
   - pkg/version
   - pkg/watch
@@ -480,5 +514,6 @@ imports:
   - plugin/pkg/client/auth
   - plugin/pkg/client/auth/gcp
   - plugin/pkg/client/auth/oidc
+  - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 testImports: []

@@ -220,27 +220,42 @@ func CreateCluster(namespace, clusterName, storageClassName string, numReplicas,
 		return err
 	}
 
+	log.Printf("Validating postgres is functioning properly")
+
 	command := []string{"bash", "/clusterutils/testdb.sh"}
 
 	stdout, stderr, err := executeCommand(client, masterPod, command)
 
+	log.Printf("About to copy to stout")
+	io.Copy(os.Stdout, stdout)
+
+	log.Printf("About to copy to stderr")
+	io.Copy(os.Stderr, stderr)
+
+	// log.Printf(stdoutBuff.String())
+
+	// log.Printf(stderrBuff.String())
 	//do something more meaningful here
 	// stdoutDone := make(chan bool)
 	// stderrDone := make(chan bool)
 
-	//fire stdout and stderr through the console
+	// //fire stdout and stderr through the console
 	// go func() {
-	io.Copy(os.Stderr, stderr)
+	// 	log.Printf("Copying sterr")
+	// 	io.Copy(os.Stderr, stderr)
 	// 	stderrDone <- true
 	// }()
 
 	// go func() {
-	io.Copy(os.Stdout, stdout)
+	// 	log.Printf("Copying stdout")
+	// 	io.Copy(os.Stdout, stdout)
 	// 	stdoutDone <- true
 	// }()
 
 	// <-stderrDone
+	// log.Printf("Done copying sterr")
 	// <-stdoutDone
+	// log.Printf("Done copying stdout")
 
 	// close(stdoutDone)
 	// close(stderrDone)

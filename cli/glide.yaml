@@ -12,6 +12,4 @@ import:
 - package: k8s.io/kubernetes
   version: v1.4.5
   subpackages:
-  - pkg/client/unversioned/remotecommand
-# - package: k8s.io/client-go
-#   version: v1.4.0
+  - pkg/client
