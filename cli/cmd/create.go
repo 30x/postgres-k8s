@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -23,7 +24,9 @@ import (
 	"strconv"
 
 	"k8s.io/client-go/1.4/kubernetes"
+	api "k8s.io/client-go/1.4/pkg/api"
 	"k8s.io/client-go/1.4/pkg/api/v1"
+	"k8s.io/client-go/1.4/pkg/labels"
 
 	"github.com/30x/postgres-k8s/cli/k8s"
 	"github.com/spf13/cobra"
@@ -211,7 +214,7 @@ func CreateCluster(namespace, clusterName, storageClassName string, numReplicas,
 		return err
 	}
 
-	masterPod, err := getMasterPod(client, clusterName)
+	masterPod, err := getMasterPod(client, namespace, clusterName)
 
 	if err != nil {
 		return err
@@ -219,40 +222,63 @@ func CreateCluster(namespace, clusterName, storageClassName string, numReplicas,
 
 	command := []string{"bash", "/clusterutils/testdb.sh"}
 
-	err = executeCommand(client, masterPod, command)
+	stdout, stderr, err := executeCommand(client, masterPod, command)
+
+	//do something more meaningful here
+	// stdoutDone := make(chan bool)
+	// stderrDone := make(chan bool)
+
+	//fire stdout and stderr through the console
+	// go func() {
+	io.Copy(os.Stderr, stderr)
+	// 	stderrDone <- true
+	// }()
+
+	// go func() {
+	io.Copy(os.Stdout, stdout)
+	// 	stdoutDone <- true
+	// }()
+
+	// <-stderrDone
+	// <-stdoutDone
+
+	// close(stdoutDone)
+	// close(stderrDone)
 
 	return err
 
 }
 
-func executeCommand(client *kubernetes.Clientset, pod *v1.Pod, command []string) error {
+func executeCommand(client *kubernetes.Clientset, pod *v1.Pod, command []string) (io.ReadCloser, io.ReadCloser, error) {
 
 	if pod.Status.Phase != v1.PodRunning {
-		return fmt.Errorf("cannot exec into a container in a non running pod; current phase is %s", pod.Status.Phase)
+		return nil, nil, fmt.Errorf("cannot exec into a container in a non running pod; current phase is %s", pod.Status.Phase)
 	}
 
 	if len(pod.Spec.Containers) > 1 {
-		return fmt.Errorf("Only 1 container per pod is supported")
+		return nil, nil, fmt.Errorf("Only 1 container per pod is supported")
 	}
 
 	containerName := pod.Spec.Containers[0].Name
 
-	err := k8s.ExecCommand(pod.Namespace, pod.Name, containerName, command)
-
-	return err
+	return k8s.ExecCommand(pod.Namespace, pod.Name, containerName, command)
 
 }
 
 //Wait for the number of pods to start.  Will wait the duration. If it fails, it will return an error.  If it succeeds, nil will be returned
 func waitForPodsToStart(client *kubernetes.Clientset, namespace, clusterName string, numNodes int, timeout time.Duration) error {
 
-	selector := createClusterSelector(clusterName)
+	selector, err := labels.Parse(createClusterSelector(clusterName))
+
+	if err != nil {
+		return err
+	}
 
 	expiration := time.Now().Add(timeout)
 
 	//keep running until we expire
 	for time.Now().Before(expiration) {
-		pods, err := client.Pods(namespace).List(v1.ListOptions{
+		pods, err := client.Pods(namespace).List(api.ListOptions{
 			LabelSelector: selector,
 		})
 

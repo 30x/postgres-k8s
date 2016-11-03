@@ -19,7 +19,8 @@ import (
 	"os"
 
 	"k8s.io/client-go/1.4/kubernetes"
-	"k8s.io/client-go/1.4/pkg/api/v1"
+	"k8s.io/client-go/1.4/pkg/api"
+	"k8s.io/client-go/1.4/pkg/labels"
 
 	"github.com/30x/postgres-k8s/cli/k8s"
 	"github.com/spf13/cobra"
@@ -128,9 +129,14 @@ func DeleteCluster(namespace, clusterName string, deletePVC bool) error {
 func deletePersistentVolumeClaims(client *kubernetes.Clientset, namespace, clusterName string) error {
 
 	fmt.Println("Deleting persistent volume claims")
-	selector := createClusterSelector(clusterName)
 
-	err := client.PersistentVolumeClaims(namespace).DeleteCollection(&v1.DeleteOptions{}, v1.ListOptions{
+	selector, err := labels.Parse(createClusterSelector(clusterName))
+
+	if err != nil {
+		return err
+	}
+
+	err = client.PersistentVolumeClaims(namespace).DeleteCollection(&api.DeleteOptions{}, api.ListOptions{
 		LabelSelector: selector,
 	})
 
@@ -142,9 +148,13 @@ func deleteReplicaSets(client *kubernetes.Clientset, namespace, clusterName stri
 
 	fmt.Println("Deleting Replica Sets")
 
-	selector := createClusterSelector(clusterName)
+	selector, err := labels.Parse(createClusterSelector(clusterName))
 
-	err := client.ReplicaSets(namespace).DeleteCollection(&v1.DeleteOptions{}, v1.ListOptions{
+	if err != nil {
+		return err
+	}
+
+	err = client.ReplicaSets(namespace).DeleteCollection(&api.DeleteOptions{}, api.ListOptions{
 		LabelSelector: selector,
 	})
 
@@ -155,9 +165,13 @@ func deleteReplicaPods(client *kubernetes.Clientset, namespace, clusterName stri
 
 	fmt.Println("Deleting Replica Pods")
 
-	selector := createClusterSelector(clusterName)
+	selector, err := labels.Parse(createClusterSelector(clusterName))
 
-	err := client.Pods(namespace).DeleteCollection(&v1.DeleteOptions{}, v1.ListOptions{
+	if err != nil {
+		return err
+	}
+
+	err = client.Pods(namespace).DeleteCollection(&api.DeleteOptions{}, api.ListOptions{
 		LabelSelector: selector,
 	})
 
@@ -168,9 +182,13 @@ func deleteServices(client *kubernetes.Clientset, namespace, clusterName string)
 
 	fmt.Println("Deleting Services")
 
-	selector := createClusterSelector(clusterName)
+	selector, err := labels.Parse(createClusterSelector(clusterName))
 
-	services, err := client.Services(namespace).List(v1.ListOptions{
+	if err != nil {
+		return err
+	}
+
+	services, err := client.Services(namespace).List(api.ListOptions{
 		LabelSelector: selector,
 	})
 

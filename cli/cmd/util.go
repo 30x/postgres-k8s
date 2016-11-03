@@ -5,7 +5,9 @@ import (
 	"strings"
 
 	"k8s.io/client-go/1.4/kubernetes"
+	"k8s.io/client-go/1.4/pkg/api"
 	"k8s.io/client-go/1.4/pkg/api/v1"
+	"k8s.io/client-go/1.4/pkg/labels"
 )
 
 //createClusterSelector create a selector for the cluster
@@ -17,8 +19,14 @@ func createClusterSelector(clusterName string) string {
 func getMasterPod(client *kubernetes.Clientset, namespace, clusterName string) (*v1.Pod, error) {
 	selectorString := fmt.Sprintf("app=postgres,master=true,cluster=%s", clusterName)
 
-	pods, err := client.Pods(namespace).List(v1.ListOptions{
-		LabelSelector: selectorString,
+	selector, err := labels.Parse(selectorString)
+
+	if err != nil {
+		return nil, err
+	}
+
+	pods, err := client.Pods(namespace).List(api.ListOptions{
+		LabelSelector: selector,
 	})
 
 	if err != nil {
@@ -49,8 +57,14 @@ func getMasterPod(client *kubernetes.Clientset, namespace, clusterName string) (
 func getReplicaPods(client *kubernetes.Clientset, namespace, clusterName string) ([]v1.Pod, error) {
 	selectorString := fmt.Sprintf("app=postgres,role=replica,cluster=%s", clusterName)
 
-	pods, err := client.Pods(namespace).List(v1.ListOptions{
-		LabelSelector: selectorString,
+	selector, err := labels.Parse(selectorString)
+
+	if err != nil {
+		return nil, err
+	}
+
+	pods, err := client.Pods(namespace).List(api.ListOptions{
+		LabelSelector: selector,
 	})
 
 	if err != nil {
