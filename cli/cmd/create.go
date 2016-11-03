@@ -19,6 +19,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"strconv"
@@ -223,60 +224,67 @@ func CreateCluster(namespace, clusterName, storageClassName string, numReplicas,
 	log.Printf("Validating postgres is functioning properly")
 
 	command := []string{"bash", "/clusterutils/testdb.sh"}
+	// command := []string{"echo", "Marco"}
 
-	stdout, stderr, err := executeCommand(client, masterPod, command)
-
-	log.Printf("About to copy to stout")
-	io.Copy(os.Stdout, stdout)
-
-	log.Printf("About to copy to stderr")
-	io.Copy(os.Stderr, stderr)
-
-	// log.Printf(stdoutBuff.String())
-
-	// log.Printf(stderrBuff.String())
-	//do something more meaningful here
-	// stdoutDone := make(chan bool)
-	// stderrDone := make(chan bool)
-
-	// //fire stdout and stderr through the console
-	// go func() {
-	// 	log.Printf("Copying sterr")
-	// 	io.Copy(os.Stderr, stderr)
-	// 	stderrDone <- true
-	// }()
-
-	// go func() {
-	// 	log.Printf("Copying stdout")
-	// 	io.Copy(os.Stdout, stdout)
-	// 	stdoutDone <- true
-	// }()
-
-	// <-stderrDone
-	// log.Printf("Done copying sterr")
-	// <-stdoutDone
-	// log.Printf("Done copying stdout")
-
-	// close(stdoutDone)
-	// close(stderrDone)
-
-	return err
-
-}
-
-func executeCommand(client *kubernetes.Clientset, pod *v1.Pod, command []string) (io.ReadCloser, io.ReadCloser, error) {
-
-	if pod.Status.Phase != v1.PodRunning {
-		return nil, nil, fmt.Errorf("cannot exec into a container in a non running pod; current phase is %s", pod.Status.Phase)
+	if masterPod.Status.Phase != v1.PodRunning {
+		return fmt.Errorf("cannot exec into a container in a non running pod; current phase is %s", masterPod.Status.Phase)
 	}
 
-	if len(pod.Spec.Containers) > 1 {
-		return nil, nil, fmt.Errorf("Only 1 container per pod is supported")
+	if len(masterPod.Spec.Containers) > 1 {
+		return fmt.Errorf("Only 1 container per pod is supported")
 	}
 
-	containerName := pod.Spec.Containers[0].Name
+	containerName := masterPod.Spec.Containers[0].Name
 
-	return k8s.ExecCommand(pod.Namespace, pod.Name, containerName, command)
+	wg := &sync.WaitGroup{}
+
+	wg.Add(3)
+
+	stdoutReader, stdoutWriter := io.Pipe()
+	stderrReader, stderrWriter := io.Pipe()
+
+	var execError error
+	var stdErrCopyErr error
+	var stdOutCopyErr error
+
+	//start the command in the background
+	go func() {
+		defer wg.Done()
+		log.Printf("Executing the command")
+		execError = k8s.ExecCommand(masterPod.Namespace, masterPod.Name, containerName, command, stdoutWriter, stderrWriter)
+	}()
+
+	//start the stderr in the background
+	go func() {
+		defer wg.Done()
+		log.Printf("Starting stderr read")
+		_, stdErrCopyErr = io.Copy(os.Stderr, stderrReader)
+		log.Printf("Completed stderr read")
+	}()
+
+	//start the stdout in the background
+	go func() {
+		defer wg.Done()
+		log.Printf("Starting stdout read")
+		_, stdOutCopyErr = io.Copy(os.Stdout, stdoutReader)
+		log.Printf("Completed stdout read")
+	}()
+
+	log.Printf("waiting for Wait group")
+	//wait for all the copying to complete
+	wg.Wait()
+
+	if execError != nil {
+		log.Printf("Exec error")
+		return execError
+	}
+
+	if stdErrCopyErr != nil {
+		log.Printf("stderr copy error")
+		return stdErrCopyErr
+	}
+
+	return stdOutCopyErr
 
 }
 

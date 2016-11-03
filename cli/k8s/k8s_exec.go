@@ -1,7 +1,6 @@
 package k8s
 
 import (
-	"bytes"
 	"io"
 	"log"
 
@@ -40,28 +39,28 @@ func GetClient() (*unversioned.Client, error) {
 	return client, nil
 }
 
-//ExecCommand run the command in the namespace's pod and container TODO return stdout and stderr as streams.  Returns stdout, stderr, and error
-func ExecCommand(namespace, podName, containerName string, commands []string) (io.ReadCloser, io.ReadCloser, error) {
+//ExecCommand run the command in the namespace's pod and container TODO return stdout and stderr as streams.  Returns stdout, stderr, and error.  Note that this will block until streaming completes from the command
+func ExecCommand(namespace, podName, containerName string, commands []string, stderr, stdout io.Writer) error {
 
 	config, err := GetK8sRestConfig()
 
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
 
 	client, err := GetClient()
 
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
 
 	podExecOpts := &api.PodExecOptions{
 		Container: containerName,
 		Command:   commands,
-		Stdin:     true, // redirect Stdin
-		Stdout:    true, // reditect Stdout from container
-		Stderr:    true, // redirect Stderr from container
-		TTY:       true, // allocate a TTY
+		Stdin:     false, // redirect Stdin
+		Stdout:    true,  // reditect Stdout from container
+		Stderr:    true,  // redirect Stderr from container
+		TTY:       false, // allocate a TTY
 	}
 
 	req := client.RESTClient.Post().
@@ -73,45 +72,46 @@ func ExecCommand(namespace, podName, containerName string, commands []string) (i
 
 	req.VersionedParams(podExecOpts, api.ParameterCodec) // not sure what this is, just followed examples/what kubectl does
 
+	log.Printf("Requesting endpoint at %s", req.URL().String())
+
 	exec, err := remotecommand.NewExecutor(config, "POST", req.URL())
 
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
 
-	stdin := &bytes.Buffer{}
+	// loggingWriter := &loggingWriter{
+	// 	target: stdoutWriter,
+	// }
 
-	// stdout := &bytes.Buffer{}
-	// stderr := &bytes.Buffer{}
-
-	stdoutReader, stdoutWriter := io.Pipe()
-	stderrReader, stderrWriter := io.Pipe()
-
-	//todo, not sure we need this
-
-	// io.WriteCloser
-
-	log.Printf("About to execute remote stream")
+	log.Printf("Remote stream in progress")
 
 	err = exec.Stream(remotecommand.StreamOptions{
 		SupportedProtocols: remotecommandserver.SupportedStreamingProtocols,
-		Stdin:              stdin,
-		Stdout:             stdoutWriter,
-		Stderr:             stderrWriter,
+		Stdin:              nil,
+		Stdout:             stdout,
+		Stderr:             stderr,
 		Tty:                false,
 		TerminalSizeQueue:  nil,
 	})
 
-	log.Printf("Remote stream in progress")
+	log.Printf("Remote stream closed")
 
-	return stdoutReader, stderrReader, err
+	// return stdoutReader, stderrReader, err
+	return err
 
-	// rmtCmd, err := remote.NewExecutor(restConf, "POST", req.URL())
+}
 
-	// if err != nil {
-	// 	return err
-	// }
+type loggingWriter struct {
+	target io.Writer
+}
 
-	// supportedProtocols := []string{remoteServer.StreamProtocolV1Name, remoteServer.StreamProtocolV2Name}
-	// err := rmtCmd.Stream(supportedProtocols, stdin, stdout, stderr, true)
+func (logger *loggingWriter) Write(p []byte) (n int, err error) {
+	length := len(p)
+
+	string := string(p)
+
+	log.Printf("Writing %d bytes.  Bytes are '%s'", length, string)
+
+	return logger.target.Write(p)
 }
