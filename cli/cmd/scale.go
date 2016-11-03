@@ -19,7 +19,7 @@ import (
 	"os"
 	"strconv"
 
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/1.4/pkg/api/v1"
 
 	"github.com/30x/postgres-k8s/cli/k8s"
 	"github.com/spf13/cobra"

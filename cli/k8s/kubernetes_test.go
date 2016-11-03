@@ -8,7 +8,7 @@ import (
 	"github.com/30x/postgres-k8s/cli/k8s"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/1.4/pkg/api/v1"
 )
 
 var _ = Describe("kubernetes", func() {
@@ -59,10 +59,12 @@ var _ = Describe("kubernetes", func() {
 		expectedName := fmt.Sprintf("postgres-%s-%d", clusterName, 0)
 
 		Expect(rs.ObjectMeta.Name).Should(Equal(expectedName))
+
+		Expect(len(rs.Spec.Template.Labels)).Should(Equal(4))
+
 		Expect(rs.Spec.Template.Labels["app"]).Should(Equal("postgres"))
 		Expect(rs.Spec.Template.Labels["cluster"]).Should(Equal(clusterName))
 		Expect(rs.Spec.Template.Labels["index"]).Should(Equal("0"))
-		Expect(rs.Spec.Template.Labels["role"]).Should(Equal("master"))
 		Expect(rs.Spec.Template.Labels["master"]).Should(Equal("true"))
 
 		container := &rs.Spec.Template.Spec.Containers[0]
@@ -110,10 +112,11 @@ var _ = Describe("kubernetes", func() {
 		expectedName := fmt.Sprintf("postgres-%s-%d", clusterName, 1)
 
 		Expect(rs.ObjectMeta.Name).Should(Equal(expectedName))
+
+		Expect(len(rs.Spec.Template.Labels)).Should(Equal(3))
 		Expect(rs.Spec.Template.Labels["app"]).Should(Equal("postgres"))
 		Expect(rs.Spec.Template.Labels["cluster"]).Should(Equal(clusterName))
 		Expect(rs.Spec.Template.Labels["index"]).Should(Equal(strconv.Itoa(index)))
-		Expect(rs.Spec.Template.Labels["role"]).Should(Equal("replica"))
 
 		container := &rs.Spec.Template.Spec.Containers[0]
 

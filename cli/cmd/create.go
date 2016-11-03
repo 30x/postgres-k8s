@@ -22,12 +22,12 @@ import (
 
 	"strconv"
 
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/1.4/kubernetes"
+	"k8s.io/client-go/1.4/pkg/api/v1"
 
 	"github.com/30x/postgres-k8s/cli/k8s"
 	"github.com/spf13/cobra"
-	extv1beta1 "k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	extv1beta1 "k8s.io/client-go/1.4/pkg/apis/extensions/v1beta1"
 )
 
 var createArgs *CreateArgs
@@ -207,22 +207,21 @@ func CreateCluster(namespace, clusterName, storageClassName string, numReplicas,
 
 	err = waitForPodsToStart(client, namespace, clusterName, numNodes, 5*time.Minute)
 
-	//now execute our sql statement to ensure everything is running correctly
-	// client.
+	if err != nil {
+		return err
+	}
 
-	return nil
-	//TODO finish this with actual cluster validation
+	masterPod, err := getMasterPod(client, clusterName)
 
-	// masterPod, err := getMasterPod(client, clusterName)
+	if err != nil {
+		return err
+	}
 
-	// if err != nil {
-	// 	return err
-	// }
-	// command := []string{"bash", "/clusterutils/testdb.sh"}
+	command := []string{"bash", "/clusterutils/testdb.sh"}
 
-	// err = executeCommand(client, masterPod, command)
+	err = executeCommand(client, masterPod, command)
 
-	// return err
+	return err
 
 }
 
@@ -236,61 +235,11 @@ func executeCommand(client *kubernetes.Clientset, pod *v1.Pod, command []string)
 		return fmt.Errorf("Only 1 container per pod is supported")
 	}
 
-	// containerName := pod.Spec.Containers[0].Name
+	containerName := pod.Spec.Containers[0].Name
 
-	// restClient := client.CoreClient.GetRESTClient()
+	err := k8s.ExecCommand(pod.Namespace, pod.Name, containerName, command)
 
-	// req := restClient.Post().
-	// 	Resource("pods").
-	// 	Name(pod.Name).
-	// 	Namespace(pod.Namespace).
-	// 	SubResource("exec").
-	// 	Param("container", containerName)
-
-	// req.VersionedParams(&api.PodExecOptions{
-	// 	Container: containerName,
-	// 	Command:   command,
-	// 	Stdin:     false,
-	// 	Stdout:    false,
-	// 	Stderr:    false,
-	// 	TTY:       true,
-	// }, api.ParameterCodec)
-
-	// remotecommand.NewExector
-
-	// func (*DefaultRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue term.TerminalSizeQueue) error {
-	// 	exec, err := remotecommand.NewExecutor(config, method, url)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	return exec.Stream(remotecommand.StreamOptions{
-	// 		SupportedProtocols: remotecommandserver.SupportedStreamingProtocols,
-	// 		Stdin:              stdin,
-	// 		Stdout:             stdout,
-	// 		Stderr:             stderr,
-	// 		Tty:                tty,
-	// 		TerminalSizeQueue:  terminalSizeQueue,
-	// 	})
-	// }
-
-	// return p.Executor.Execute("POST", req.URL(), p.Config, p.In, p.Out, p.Err, t.Raw, sizeQueue)
-
-	// ioStream, err := req.Stream()
-
-	// if err != nil {
-	// 	return err
-	// }
-
-	// result := req.Do()
-
-	// if err != nil {
-	// 	return err
-	// }
-
-	// return result.Error()
-	// io.Copy(os.Stdout, ioStream)
-
-	return nil
+	return err
 
 }
 

@@ -13,5 +13,5 @@ import:
   version: v1.4.5
   subpackages:
   - pkg/client/unversioned/remotecommand
-- package: k8s.io/client-go
-  version: b22087a53becae45931ed72d5e0f12e0031d771a
+# - package: k8s.io/client-go
+#   version: v1.4.0
