@@ -19,7 +19,7 @@ import (
 )
 
 //DefaultImage the image we're pulling. Eventually this should come from a var that's overwritten by the build process, or a local configuration yaml file.
-var DefaultImage = "thirtyx/transicator-postgres-k8s:0.0.6"
+var DefaultImage = "thirtyx/transicator-postgres-k8s:0.0.7-dev"
 
 //CreateClientFromEnv create a k8s client from the current runtime.  Searches
 func CreateClientFromEnv() (*kubernetes.Clientset, error) {
