@@ -17,9 +17,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strconv"
-
-	"k8s.io/client-go/1.4/pkg/api/v1"
 
 	"github.com/30x/postgres-k8s/cli/k8s"
 	"github.com/spf13/cobra"
@@ -109,34 +106,20 @@ func AddReplicas(namespace, clusterName, storageClass string, numReplicas, sidkS
 		return err
 	}
 
-	startIndex := 0
-
-	for _, pod := range replicas {
-
-		index, err := getPodIndex(&pod)
-
-		if err != nil {
-			return err
-		}
-
-		if startIndex < index {
-			startIndex = index
-		}
-	}
-
 	masterPod, err := getMasterPod(client, namespace, clusterName)
-
-	index, err := getPodIndex(masterPod)
 
 	if err != nil {
 		return err
 	}
 
-	if startIndex < index {
-		startIndex = index
+	indexes, err := getActiveIndexesForCluster(append(replicas, *masterPod))
+
+	if err != nil {
+		return err
 	}
 
-	startIndex++
+	//get the max index, and increment it one.
+	startIndex := indexes[len(indexes)-1] + 1
 
 	endIndex := startIndex + numReplicas
 
@@ -159,23 +142,6 @@ func AddReplicas(namespace, clusterName, storageClass string, numReplicas, sidkS
 
 	}
 
-	return nil
+	return updateMasterWithReplicas(client, namespace, clusterName)
 
-}
-
-//getPodIndex get the index of the pod
-func getPodIndex(pod *v1.Pod) (int, error) {
-	indexLabel, ok := pod.Labels["index"]
-
-	if !ok {
-		return 0, fmt.Errorf("Could not find 'index' label on pod %s", pod.Name)
-	}
-
-	index, err := strconv.Atoi(indexLabel)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return index, nil
 }

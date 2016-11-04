@@ -166,6 +166,7 @@ var _ = Describe("kubernetes", func() {
 
 		Expect(service.Name).Should(Equal(expectedName))
 
+		Expect(len(service.Spec.Selector)).Should(Equal(3))
 		Expect(service.Spec.Selector["app"]).Should(Equal("postgres"))
 		Expect(service.Spec.Selector["master"]).Should(Equal("true"))
 		Expect(service.Spec.Selector["cluster"]).Should(Equal(clusterName))
@@ -181,8 +182,8 @@ var _ = Describe("kubernetes", func() {
 
 		Expect(service.Name).Should(Equal(expectedName))
 
+		Expect(len(service.Spec.Selector)).Should(Equal(2))
 		Expect(service.Spec.Selector["app"]).Should(Equal("postgres"))
-		Expect(service.Spec.Selector["role"]).Should(Equal("replica"))
 		Expect(service.Spec.Selector["cluster"]).Should(Equal(clusterName))
 	})
 })

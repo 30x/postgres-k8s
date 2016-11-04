@@ -18,8 +18,8 @@ import (
 	"k8s.io/client-go/1.4/tools/clientcmd"
 )
 
-//Image the image we're pulling. Eventually this should come from a var that's overwritten by the build process, or a local configuration yaml file.
-const Image = "thirtyx/postgres:0.0.3-dev"
+//DefaultImage the image we're pulling. Eventually this should come from a var that's overwritten by the build process, or a local configuration yaml file.
+var DefaultImage = "thirtyx/transicator-postgres-k8s:0.0.6"
 
 //CreateClientFromEnv create a k8s client from the current runtime.  Searches
 func CreateClientFromEnv() (*kubernetes.Clientset, error) {
@@ -192,7 +192,7 @@ func CreateMaster(clusterName string, replicaIDs []string, index int) *extv1beta
 	      terminationGracePeriodSeconds: 0
 	      containers:
 	      - name: postgres
-	        image: thirtyx/postgres:0.0.3-dev
+	        image: thirtyx/transicator-postgres-k8s:0.0.3-dev
 	        env:
 	          - name: POSTGRES_PASSWORD
 	            value: password
@@ -285,7 +285,7 @@ func CreateReplica(clusterName string, index int) *extv1beta1.ReplicaSet {
 		      terminationGracePeriodSeconds: 0
 		      containers:
 		      - name: postgres
-		        image: thirtyx/postgres:0.0.3-dev
+		        image: thirtyx/transicator-postgres-k8s:0.0.3-dev
 		        env:
 		          - name: POSTGRES_PASSWORD
 		            value: password
@@ -350,7 +350,7 @@ func createBaseReplicaSet(clusterName string, index int) *extv1beta1.ReplicaSet 
 	      terminationGracePeriodSeconds: 0
 	      containers:
 	      - name: postgres
-	        image: thirtyx/postgres:0.0.3-dev
+	        image: thirtyx/transicator-postgres-k8s:0.0.3-dev
 	        env:
 	          - name: POSTGRES_PASSWORD
 	            value: password
@@ -402,7 +402,7 @@ func createBaseReplicaSet(clusterName string, index int) *extv1beta1.ReplicaSet 
 	container := &podSpec.Containers[0]
 
 	container.Name = "postgres"
-	container.Image = Image
+	container.Image = DefaultImage
 	appendEnv(container, "POSTGRES_PASSOWRD", "password")
 	appendEnv(container, "PGDATA", "/pgdata/data")
 	appendEnv(container, "PGMOUNT", "/pgdata")
@@ -543,8 +543,6 @@ func CreateReadService(clusterName string) *v1.Service {
 
 	svc.Name = name
 	svc.ObjectMeta.Labels["type"] = "read"
-
-	svc.Spec.Selector["role"] = "replica"
 
 	return svc
 }

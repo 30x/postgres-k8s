@@ -18,6 +18,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
+
+	api "k8s.io/client-go/1.4/pkg/api"
 
 	"github.com/30x/postgres-k8s/cli/k8s"
 	"github.com/spf13/cobra"
@@ -102,7 +105,7 @@ func Failover(namespace, clusterName string, force bool) error {
 	}
 
 	if oldMasterPod != nil && !force {
-		return fmt.Errorf("Master pod is already running.  If you want to failover, you must specify the force flag.")
+		return fmt.Errorf("Master pod '%s' is already running.  If you want to failover, you must specify the force flag.", oldMasterPod.Name)
 	}
 
 	//it's not found, continue
@@ -117,18 +120,6 @@ func Failover(namespace, clusterName string, force bool) error {
 	}
 
 	newMaster := replicas[0]
-
-	//patch the master with the labels
-
-	// updatedMasterPod, err := client.Pods(namespace).Patch()
-
-	// if err != nil {
-	// 	return err
-	// }
-
-	//TODO update the replica set in case the pod dies
-
-	// k8s.CreateMaster(clusterName, rep)
 
 	ownerRefs := newMaster.OwnerReferences
 
@@ -166,6 +157,75 @@ func Failover(namespace, clusterName string, force bool) error {
 	}
 
 	log.Printf("Updated pod %s with master labels", updatedPod.Name)
+
+	log.Printf("Re-writing synchrnous replicas")
+
+	containerName, err := getContainerNameForPod(updatedPod)
+
+	if err != nil {
+		return err
+	}
+
+	indexes, err := getActiveIndexesForCluster(replicas[1:])
+
+	if err != nil {
+		return err
+	}
+
+	err = updateMasterConfigurationWithReplicaIds(namespace, updatedPod.Name, containerName, indexes)
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Bouncing pod for service discovery")
+
+	//now kill the pod and get the master
+	err = client.Pods(namespace).Delete(updatedPod.Name, &api.DeleteOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Waiting for pod to start")
+
+	//wait for the pods to come back up
+	err = waitForPodsToStart(client, namespace, clusterName, len(replicas), 60*time.Second)
+
+	if err != nil {
+		return err
+	}
+
+	masterPod, err := getMasterPod(client, namespace, clusterName)
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Signaling to replica it needs to become the master")
+
+	command := []string{"/usr/bin/touch", "/tmp/postgresql.trigger.5432"}
+
+	_, stderr, err := k8s.ExecCommandWithStdoutStderr(namespace, masterPod.Name, containerName, command)
+
+	if err != nil {
+		return err
+	}
+
+	if len(stderr) != 0 {
+		return fmt.Errorf("An error occured when running the touch command on postgres.  The stderr output is below.  \n %s", stderr)
+	}
+
+	//TODO occasionally this hangs.  Not sure why, seems to be service switch issue with k8s. Killing the pod and respawing seems to resolve.  We might want to do that before signaling
+
+	//test the new master
+	err = testMaster(client, namespace, clusterName)
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Postgres is now online and ready to rock!")
 
 	return nil
 

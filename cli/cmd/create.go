@@ -16,10 +16,8 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
-	"sync"
 	"time"
 
 	"strconv"
@@ -33,6 +31,8 @@ import (
 	"github.com/spf13/cobra"
 	extv1beta1 "k8s.io/client-go/1.4/pkg/apis/extensions/v1beta1"
 )
+
+const expectedQueryOutput = "sum | 10"
 
 var createArgs *CreateArgs
 
@@ -215,76 +215,15 @@ func CreateCluster(namespace, clusterName, storageClassName string, numReplicas,
 		return err
 	}
 
-	masterPod, err := getMasterPod(client, namespace, clusterName)
+	err = testMaster(client, namespace, clusterName)
 
 	if err != nil {
 		return err
 	}
 
-	log.Printf("Validating postgres is functioning properly")
+	log.Printf("Postgres is now online and ready to rock!")
 
-	command := []string{"bash", "/clusterutils/testdb.sh"}
-	// command := []string{"echo", "Marco"}
-
-	if masterPod.Status.Phase != v1.PodRunning {
-		return fmt.Errorf("cannot exec into a container in a non running pod; current phase is %s", masterPod.Status.Phase)
-	}
-
-	if len(masterPod.Spec.Containers) > 1 {
-		return fmt.Errorf("Only 1 container per pod is supported")
-	}
-
-	containerName := masterPod.Spec.Containers[0].Name
-
-	wg := &sync.WaitGroup{}
-
-	wg.Add(3)
-
-	stdoutReader, stdoutWriter := io.Pipe()
-	stderrReader, stderrWriter := io.Pipe()
-
-	var execError error
-	var stdErrCopyErr error
-	var stdOutCopyErr error
-
-	//start the command in the background
-	go func() {
-		defer wg.Done()
-		log.Printf("Executing the command")
-		execError = k8s.ExecCommand(masterPod.Namespace, masterPod.Name, containerName, command, stdoutWriter, stderrWriter)
-	}()
-
-	//start the stderr in the background
-	go func() {
-		defer wg.Done()
-		log.Printf("Starting stderr read")
-		_, stdErrCopyErr = io.Copy(os.Stderr, stderrReader)
-		log.Printf("Completed stderr read")
-	}()
-
-	//start the stdout in the background
-	go func() {
-		defer wg.Done()
-		log.Printf("Starting stdout read")
-		_, stdOutCopyErr = io.Copy(os.Stdout, stdoutReader)
-		log.Printf("Completed stdout read")
-	}()
-
-	log.Printf("waiting for Wait group")
-	//wait for all the copying to complete
-	wg.Wait()
-
-	if execError != nil {
-		log.Printf("Exec error")
-		return execError
-	}
-
-	if stdErrCopyErr != nil {
-		log.Printf("stderr copy error")
-		return stdErrCopyErr
-	}
-
-	return stdOutCopyErr
+	return nil
 
 }
 

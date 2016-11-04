@@ -1,8 +1,9 @@
 package k8s
 
 import (
+	"bytes"
 	"io"
-	"log"
+	"sync"
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/restclient"
@@ -39,8 +40,72 @@ func GetClient() (*unversioned.Client, error) {
 	return client, nil
 }
 
+//ExecCommandWithStdoutStderr Execute the command with a response of stdout, stderr, and error fully buffered nad parsed
+func ExecCommandWithStdoutStderr(namespace, podName, containerName string, command []string) (string, string, error) {
+	wg := &sync.WaitGroup{}
+
+	wg.Add(3)
+
+	stdoutReader, stdoutWriter := io.Pipe()
+	stderrReader, stderrWriter := io.Pipe()
+
+	stdoutBuff := &bytes.Buffer{}
+	stderrBuff := &bytes.Buffer{}
+
+	var execError error
+	var stdErrCopyErr error
+	var stdOutCopyErr error
+
+	//start the stderr in the background
+	go func() {
+		defer wg.Done()
+		// log.Printf("Starting stderr read")
+		_, stdErrCopyErr = io.Copy(stdoutBuff, stderrReader)
+		// log.Printf("Completed stderr read")
+	}()
+
+	//start the stdout in the background
+	go func() {
+		defer wg.Done()
+		// log.Printf("Starting stdout read")
+		_, stdOutCopyErr = io.Copy(stderrBuff, stdoutReader)
+		// log.Printf("Completed stdout read")
+	}()
+
+	//start the command in the background
+	go func() {
+		defer wg.Done()
+		// log.Printf("Executing the command")
+		execError = ExecCommand(namespace, podName, containerName, command, stdoutWriter, stderrWriter)
+	}()
+
+	// log.Printf("Waiting for stdout and stderr to complete streaming.")
+	//wait for all the copying to complete
+	wg.Wait()
+
+	// log.Printf("Returning strings and errs")
+
+	stdout := stdoutBuff.String()
+	stderr := stderrBuff.String()
+
+	if execError != nil {
+		return "", "", execError
+	}
+
+	if stdErrCopyErr != nil {
+		return "", "", stdErrCopyErr
+	}
+
+	if stdOutCopyErr != nil {
+		return "", "", stdOutCopyErr
+	}
+
+	return stdout, stderr, nil
+
+}
+
 //ExecCommand run the command in the namespace's pod and container TODO return stdout and stderr as streams.  Returns stdout, stderr, and error.  Note that this will block until streaming completes from the command
-func ExecCommand(namespace, podName, containerName string, commands []string, stderr, stdout io.Writer) error {
+func ExecCommand(namespace, podName, containerName string, commands []string, stderr, stdout *io.PipeWriter) error {
 
 	config, err := GetK8sRestConfig()
 
@@ -72,7 +137,7 @@ func ExecCommand(namespace, podName, containerName string, commands []string, st
 
 	req.VersionedParams(podExecOpts, api.ParameterCodec) // not sure what this is, just followed examples/what kubectl does
 
-	log.Printf("Requesting endpoint at %s", req.URL().String())
+	// log.Printf("Requesting endpoint at %s", req.URL().String())
 
 	exec, err := remotecommand.NewExecutor(config, "POST", req.URL())
 
@@ -80,11 +145,7 @@ func ExecCommand(namespace, podName, containerName string, commands []string, st
 		return err
 	}
 
-	// loggingWriter := &loggingWriter{
-	// 	target: stdoutWriter,
-	// }
-
-	log.Printf("Remote stream in progress")
+	// log.Printf("Remote stream in progress")
 
 	err = exec.Stream(remotecommand.StreamOptions{
 		SupportedProtocols: remotecommandserver.SupportedStreamingProtocols,
@@ -95,23 +156,12 @@ func ExecCommand(namespace, podName, containerName string, commands []string, st
 		TerminalSizeQueue:  nil,
 	})
 
-	log.Printf("Remote stream closed")
+	// log.Printf("Remote stream closed")
+
+	stderr.Close()
+	stdout.Close()
 
 	// return stdoutReader, stderrReader, err
 	return err
 
-}
-
-type loggingWriter struct {
-	target io.Writer
-}
-
-func (logger *loggingWriter) Write(p []byte) (n int, err error) {
-	length := len(p)
-
-	string := string(p)
-
-	log.Printf("Writing %d bytes.  Bytes are '%s'", length, string)
-
-	return logger.target.Write(p)
 }

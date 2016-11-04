@@ -1,20 +1,20 @@
-IMAGE_VERSION=0.0.3-dev
+IMAGE_VERSION=0.0.6
 
 build-and-push: build-postgres push-postgres-to-hub
 
 build-and-push-benchmark: build-benchmark push-benchmark-to-hub
 
 build-postgres:
-	docker build -t thirtyx/postgres docker-image
+	docker build -t thirtyx/transicator-postgres-k8s docker-image
 
 build-benchmark:
-	docker build -t thirtyx/postgres-benchmark benchmark
+	docker build -t thirtyx/transicator-postgres-k8s-benchmark benchmark
 
 
 push-postgres-to-hub:
-		docker tag thirtyx/postgres thirtyx/postgres:$(IMAGE_VERSION)
-		docker push thirtyx/postgres:$(IMAGE_VERSION)
+		docker tag thirtyx/transicator-postgres-k8s thirtyx/transicator-postgres-k8s:$(IMAGE_VERSION)
+		docker push thirtyx/transicator-postgres-k8s:$(IMAGE_VERSION)
 
 push-benchmark-to-hub:
-		docker tag thirtyx/postgres-benchmark thirtyx/postgres-benchmark:$(IMAGE_VERSION)
-		docker push thirtyx/postgres-benchmark:$(IMAGE_VERSION)
+		docker tag thirtyx/transicator-postgres-k8s-benchmark thirtyx/transicator-postgres-k8s-benchmark:$(IMAGE_VERSION)
+		docker push thirtyx/transicator-postgres-k8s-benchmark:$(IMAGE_VERSION)
