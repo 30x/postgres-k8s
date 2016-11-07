@@ -48,7 +48,7 @@ func (args *GetMasterArgs) validate() *InputErrors {
 
 // failoverCmd represents the failover command
 var getMasterCmd = &cobra.Command{
-	Use:   "get master",
+	Use:   "getmaster",
 	Short: "Get the master of this cluster",
 	Long:  `This will return the currently running pod that is the master node`,
 	Run: func(cmd *cobra.Command, args []string) {

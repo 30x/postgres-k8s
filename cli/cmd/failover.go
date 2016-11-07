@@ -54,13 +54,8 @@ func (args *FailoverArgs) validate() *InputErrors {
 // failoverCmd represents the failover command
 var failoverCmd = &cobra.Command{
 	Use:   "failover",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Sets the first running replica to the master",
+	Long:  `This will set the first running replica to the master.  Note that if the master is already detected as running, by default this will not allow you to override the master without the force option`,
 	Run: func(cmd *cobra.Command, args []string) {
 		errors := failoverArgs.validate()
 

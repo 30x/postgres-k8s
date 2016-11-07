@@ -52,13 +52,9 @@ func (args *ScaleArgs) validate() *InputErrors {
 // scaleCmd represents the scale command
 var scaleCmd = &cobra.Command{
 	Use:   "scale",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Adds replicas to the cluster",
+	Long: `This will add replicas to an existing cluster.  A typical use might be to increase read capacity, or to add capacity after a failover.  
+Another potential use is to add capacity with a new transicator instance, such as a major Postgres version upgrade.  Once these new nodes are current, the failover command can be run to the new nodes, and the old nodes can be removed`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		errors := scaleArgs.validate()

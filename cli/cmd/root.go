@@ -26,11 +26,11 @@ var cfgFile string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "pgk8s",
+	Use:   "pgctl",
 	Short: "A CLI to manage postgres instances in kuberentes",
 	Long: `This CLI is intented to allow you to manually perform actions
-	on postgres clusters running in kuberentes.  With the expection of the create and delete clusters comands,
-	most of these actions will be performed automatically by a sidecar monitoring agent`,
+on postgres clusters running in kuberentes.  With the expection of the create and delete clusters comands,
+most of these actions will be performed automatically by a sidecar monitoring agent`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },

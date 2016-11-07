@@ -1,0 +1,64 @@
+#Use an RC for local development
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: edgexpostgres
+spec:
+  replicas: 1
+  selector:
+    app: edgexpostgres
+  template:
+    metadata:
+      name: edgexpostgres
+      labels:
+        app: edgexpostgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres
+        env:
+          - name: DB_PASS
+            value: password
+          - name: PGDATA
+            value: /var/lib/postgresql/data/pgdata
+        ports:
+          - containerPort: 5432
+        volumeMounts:
+          - mountPath: /var/lib/postgresql/data
+            name: pg-data
+      volumes:
+      - name:  pg-data
+        hostPath:
+        # directory location on host
+          path: /data
+----
+#This is the read service.  Every client that performs select statements should use this endpoint
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-read
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+      nodePort: 30432
+  selector:
+    app: edgexpostgres
+  #Only useful in dev.  Clients will connection to minion on port 300432
+  type: NodePort
+---
+#This is the write service.  Every client that inserts or updates should use this endpoint
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-write
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+      nodePort: 30433
+  selector:
+    app: edgexpostgres
+  #Only useful in dev.  Clients will connection to minion on port 300433
+  type: NodePort
+----

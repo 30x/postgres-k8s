@@ -5,102 +5,83 @@ The point of this script is to configure postgres in k8s for a performance test.
 The system is automated with manual event firing. Eventually, this will be encapsulated
 in an api with a sidecar monitor that will perform these steps automatically
 
+## Installation.
+
+Installation is quite simple.  Perform the following make command
+
+```
+make build-cli
+```
+
+This assumes that $GOPATH/bin is in your path.  If it is not, add the following to your path. 
+
+```
+export PATH="$PATH:$GOPATH/bin"
+```
+
+Also, you will need a valid kubectl configuration in ~/.kube/config.  This assumes that commands such as `kubectl get po` are functioning.
+
 ## Starting a cluster
 
-Bootstrap your kuberetes service to have dynamic AWS type allocated.  Once this has been performed on a K8s cluster, it will not need performed again
-```
-kubectl create -f kuberetes/storageclass.yaml
-```
-
-Now create your first cluster.  We'll call it "test"
+To start a cluster simply specify the namespace and the cluster name.  This assumes the namespace exists.  If it does not, you will need to create the namespace in k8s via `kubectl create NAMESPACE`
 
 ```
-./admin-scripts/createcluster.sh test
+pgctl create -n NAMESPACE -c CLUSTERNAME
 ```
 
-This will spin up a cluster.  Make a note of the read and write service names that were provided on the startup.
+This will allocate disks, start the pods, and begin replication between the nodes.  Note that EBS allocation is generally slow, so it may take some time for the pods to come online.
 
-You can monitor the pod status by performing the following
+## Failing over a cluster
 
-```
-kubectl get po -l app=postgres,cluster=test
-```
+This is only neccessary in the event the AZ the master pod is running in fails.  If so, you can easily fail over to a heathly replica with the following command.
 
-Note that you may observe errors until the master has started.  Once the master is successfully running, all pods should eventually go to a "Running" STATUS
-You can now connect to the PG service names that were returned from the create cluster command.  In a clean fresh cluster, pod with index 0 is always the master.
-You can search for which pod is currently the master with the following kubectl command.
 
 ```
-kubectl get po -l app=postgres,cluster=test,master=true
+pgctl failover -n NAMESPACE -c CLUSTERNAME
 ```
 
-## Testing Pod Failure
+## Scaling up read replicas
 
-In the event a pod dies, it will be restarted automatically and the cluster will normalize, no intervention should be required.  You can test this by killing any one pod with the command below
-
-```
-kubectl delete po {pod name}
-```
-
-Performing a select of the pods with a get will show the pods restarting
+To scale up read replicas, use the scale command.
 
 ```
-kubectl get po -l app=postgres,cluster=test
+pgctl scale  -n NAMESPACE -c CLUSTERNAME -r [NUMBER OF REPLICAS]
 ```
 
-## Testing Availability Zone Failure
+Note that the current implementation doesn't update the WAL configuration on the master.  As a result, you will need to ensure you do not exceed the `max_wal_senders` on the master, which is currently set to 10
 
-In the event an AZ with the master pod dies, a failover to a slave is required.  To perform a failover, you must manually run the failover command.  
-Eventually this will be an automated process that fails over to a slave automatically in the event the master pod terminates and cannot be recovered.
 
-Simulate a pod death by completely removing the master's Replication Service(RS).  This will halt all streaming to the slaves.
-```
-kubectl get po -l app=postgres,cluster=test,master=true
-```
+## Upgrading to a new docker image
 
-Then take the suffix, and delete the RS with the following command.  This assumed the pod was of the format `postgres-test-0-{some id}`.
+To upgrade to a new docker image, run the folowing command
 
 ```
-kubectl delete rs postgres-test-0
+pgctl upgrade -n NAMESPACE -c CLUSTERNAME -i [DOCKER IMAGE NAME]
 ```
 
-You will now see both slaves are unable to connect to the master by using log --follow on the pod.  Now, failover to a new slave node.
+Note that this is meant to be a minor upgrade.  If a major upgrade is required, a scale out with a new version and a failover will be required to minimize downtime.
 
-```
-./admin-scripts/failover.sh test
-```
-
-Pick a node to fail over to. After the execution of the kubectl you will notice the pod you have selected is the master, the service points to it, and replication is restored.  At this point, you should use the addreplica.sh script to scale out to return your cluster to 1 mater and synchrnous replicas.  You can verify the master is up and running by selecting the master pod.
-
-    ```
-kubectl get po -l app=postgres,cluster=test,master=true
-```
-
-## Adding Read Capacity
-
-TODO
 
 ## Tearing down the cluster
 
-To remove the cluster, but retain the persistent volumes to resume operation, you would perform the following.
+The cluster can be temporarily removed, or permanently removed.  To stop the cluster but retain the disks, run the following command
 
 ```
-./admin-scripts/deletecluster.sh  test
+pgctl delete -n NAMESPACE -c CLUSTERNAME
 ```
 
-You could then resume the cluster state with the pods by simply creating the cluster again.  If the Persistent Volume Claims (PVC) exist, they will be reused.
+Your cluster can then be restarted later using the create command
 
 ```
-./admin-scripts/createcluster.sh test
+pgctl create -n NAMESPACE -c CLUSTERNAME
 ```
 
-To completely remove the cluster, and delete all data, you should run the following command
+
+If you want to permanently delete your data and the EBS storage, add the `-d` parameter
 
 ```
-./admin-scripts/deletecluster.sh -d test
+pgctl delete -n NAMESPACE -c CLUSTERNAME -d
 ```
-
-Note the '-d' flag to delete the PVC.  Use with great care.  Once the PVC has been deleted, the EBS will be deleted as well
 
 ## Notes on the gory details of synchronous replication that aren't well documented
 
