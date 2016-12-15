@@ -1,5 +1,4 @@
-#FROM postgres:9.5.4
-FROM thirtyx/transicator-postgres:0.0.6
+FROM thirtyx/transicator-postgres:0.0.9
 
 #Remove scripts installed for dev purposes.  We want our utilities to configure the images
 RUN rm -rf /docker-entrypoint-initdb.d/*
